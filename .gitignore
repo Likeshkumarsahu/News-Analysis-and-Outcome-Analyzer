@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+.env
+
+# Data and Models (Large files)
+data/
+models/outcome_model/
+chroma/
+
+# IDEs and OS
+.vscode/
+.idea/
+.DS_Store
+.ipynb_checkpoints/
+
+# Logs
+*.log

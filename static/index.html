@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Intelligence AI</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧠 News Intelligence Dashboard</h1>
+            <p class="subtitle">AI-powered sentiment • impact analysis • reasoning engine</p>
+        </header>
+
+        <main>
+            <div class="search-container">
+                <input type="text" id="queryInput" placeholder="Search global news insights..." autocomplete="off">
+                <button id="analyzeBtn">Analyze</button>
+            </div>
+
+            <div id="loading" class="hidden">
+                <div class="spinner"></div>
+                <p>Analyzing global news...</p>
+            </div>
+
+            <div id="resultsContainer"></div>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

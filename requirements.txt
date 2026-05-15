@@ -1,0 +1,10 @@
+feedparser
+chromadb
+sentence-transformers
+transformers
+torch
+google-generativeai
+spacy
+flask
+flask-cors
+python-dotenv
