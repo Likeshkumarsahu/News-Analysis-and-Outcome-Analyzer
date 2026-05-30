@@ -1,33 +1,86 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>News Intelligence AI</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>News Analysis & Outcome Analyzer</title>
+  <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🧠 News Intelligence Dashboard</h1>
-            <p class="subtitle">AI-powered sentiment • impact analysis • reasoning engine</p>
-        </header>
 
-        <main>
-            <div class="search-container">
-                <input type="text" id="queryInput" placeholder="Search global news insights..." autocomplete="off">
-                <button id="analyzeBtn">Analyze</button>
-            </div>
+  <header>
+    <h1>📰 News Analysis & Outcome Analyzer</h1>
+    <p class="subtitle">RAG · Sentiment · Impact Prediction · XAI</p>
+    <div id="status-bar">Checking DB...</div>
+  </header>
 
-            <div id="loading" class="hidden">
-                <div class="spinner"></div>
-                <p>Analyzing global news...</p>
-            </div>
+  <main>
+    <!-- Search -->
+    <section class="search-box">
+      <input
+        type="text"
+        id="query-input"
+        placeholder="Enter a news topic or query... e.g. India Pakistan tension"
+        autocomplete="off"
+      />
+      <button id="analyze-btn" onclick="analyzeQuery()">Analyze</button>
+      <button id="ingest-btn" onclick="triggerIngest()">🔄 Refresh News</button>
+      <button id="eval-btn" onclick="runEvaluation()">📊 Run Evaluation</button>
+    </section>
 
-            <div id="resultsContainer"></div>
-        </main>
+    <!-- Loading -->
+    <div id="loader" class="hidden">
+      <div class="spinner"></div>
+      <p>Analyzing... this may take a few seconds</p>
     </div>
-    <script src="script.js"></script>
+
+    <!-- Error -->
+    <div id="error-box" class="hidden"></div>
+
+    <!-- Results -->
+    <section id="results" class="hidden">
+
+      <!-- Sentiment + Impact cards -->
+      <div class="cards-row">
+        <div class="card" id="sentiment-card">
+          <div class="card-label">Sentiment</div>
+          <div class="card-value" id="sentiment-label">—</div>
+          <div class="card-sub" id="sentiment-conf">—</div>
+        </div>
+        <div class="card" id="impact-card">
+          <div class="card-label">Impact Level</div>
+          <div class="card-value" id="impact-label">—</div>
+          <div class="card-sub" id="impact-conf">—</div>
+        </div>
+      </div>
+
+      <!-- Impact signals -->
+      <div class="section-block" id="signals-block">
+        <h3>⚡ Impact Signals</h3>
+        <div id="signals-list"></div>
+      </div>
+
+      <!-- XAI Explanations -->
+      <div class="section-block" id="xai-section">
+        <h3>🔍 Explainability (LIME)</h3>
+        <div id="xai-block"></div>
+      </div>
+
+      <!-- LLM Explanation -->
+      <div class="section-block">
+        <h3>🤖 AI Explanation</h3>
+        <p id="explanation-text"></p>
+      </div>
+
+      <!-- Retrieved Articles -->
+      <div class="section-block">
+        <h3>📰 Retrieved Articles</h3>
+        <div id="articles-list"></div>
+      </div>
+
+    </section>
+  </main>
+
+  <script src="/script.js"></script>
 </body>
 </html>

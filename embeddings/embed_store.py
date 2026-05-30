@@ -1,78 +1,102 @@
-import json
 import os
+import json
 import chromadb
 from sentence_transformers import SentenceTransformer
+from preprocessing.preprocess import load_processed
 
-# ---------------- PATHS ----------------
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
+os.environ["HF_DATASETS_OFFLINE"] = "1"
 
-DATA_PATH = os.path.join(BASE_DIR, "data", "processed", "processed_news.json")
-CHROMA_PATH = os.path.join(BASE_DIR, "chroma")
+# ── Config ────────────────────────────────────────────────────────────────────
+CHROMA_PATH = "storage/chroma"
+COLLECTION  = "news"
+BATCH_SIZE  = 32          # safe for CPU RAM — old code used 64, can OOM
+MODEL_NAME  = "all-MiniLM-L6-v2"
 
-# ---------------- MODEL ----------------
-model = SentenceTransformer("all-MiniLM-L6-v2")
+os.makedirs(CHROMA_PATH, exist_ok=True)
 
-# ---------------- CHROMA (FIXED) ----------------
-client = chromadb.PersistentClient(path=CHROMA_PATH)
-collection = client.get_or_create_collection(name="news")
+# Load model once at module level
+print("  Loading embedding model...")
+_model = SentenceTransformer(MODEL_NAME, local_files_only=True)
 
-
-# ---------------- DUPLICATE CHECK ----------------
-def is_duplicate(text, existing_docs):
-    text = text.strip().lower()
-
-    for d in existing_docs:
-        d = d.strip().lower()
-
-        # stronger similarity check
-        if text[:200] == d[:200]:
-            return True
-
-    return False
+# ChromaDB persistent client
+_client     = chromadb.PersistentClient(path=CHROMA_PATH)
+_collection = _client.get_or_create_collection(
+    name=COLLECTION,
+    metadata={"hnsw:space": "cosine"},   # cosine similarity — better for text
+)
 
 
-# ---------------- STORE EMBEDDINGS ----------------
-def store_embeddings():
+def _already_stored_ids() -> set:
+    """Return all IDs already in ChromaDB to skip re-embedding."""
+    result = _collection.get(include=[])   # only fetch IDs, no vectors
+    return set(result["ids"])
 
-    if not os.path.exists(DATA_PATH):
-        print("❌ No processed data found")
+
+def store_embeddings() -> None:
+    """
+    Load processed_news.json, embed full_text, store in ChromaDB.
+    Incremental — only embeds articles not already in the DB.
+    Batched — won't OOM on CPU.
+    """
+    articles = load_processed()
+    if not articles:
+        print("  No processed articles found.")
         return
 
-    with open(DATA_PATH, "r", encoding="utf-8") as f:
-        data = json.load(f)
+    existing_ids = _already_stored_ids()
+    print(f"  ChromaDB already has {len(existing_ids)} chunks.")
 
-    existing = collection.get(include=["documents"])
-    existing_docs = existing.get("documents", [])
-
-    ids, docs, metas = [], [], []
-
-    for i, article in enumerate(data):
-        for j, chunk in enumerate(article["chunks"]):
-
-            if is_duplicate(chunk, existing_docs):
-                continue
-
-            ids.append(f"{i}_{j}")
-            docs.append(chunk)
-
-            metas.append({
-                "title": article["title"],
-                "source": article["source"],
-                "published": article["published"],
-                "topic": article.get("topic", "general")
-            })
-
-    if not docs:
-        print("⚠️ No new data to store")
+    # Filter to only new articles
+    new_articles = [a for a in articles if a["id"] not in existing_ids]
+    if not new_articles:
+        print("  Nothing new to embed. ChromaDB is up to date.")
         return
 
-    embeddings = model.encode(docs).tolist()
+    print(f"  Embedding {len(new_articles)} new articles in batches of {BATCH_SIZE}...")
 
-    collection.add(
-        ids=ids,
-        documents=docs,
-        metadatas=metas,
-        embeddings=embeddings
-    )
+    total_stored = 0
 
-    print(f"✅ Stored {len(docs)} NEW chunks in Vector DB")
+    for i in range(0, len(new_articles), BATCH_SIZE):
+        batch = new_articles[i : i + BATCH_SIZE]
+
+        ids       = [a["id"]        for a in batch]
+        texts     = [a["full_text"] for a in batch]
+        metadatas = [
+            {
+                "source":    a.get("source", ""),
+                "title":     a.get("title", "")[:200],   # ChromaDB metadata limit
+                "link":      a.get("link", "")[:500],
+                "published": a.get("published", ""),
+                "entities":  json.dumps(a.get("entities", {})),  # store as JSON string
+            }
+            for a in batch
+        ]
+
+        embeddings = _model.encode(
+            texts,
+            show_progress_bar=False,
+            batch_size=BATCH_SIZE,
+        ).tolist()
+
+        _collection.add(
+            ids=ids,
+            documents=texts,
+            metadatas=metadatas,
+            embeddings=embeddings,
+        )
+
+        total_stored += len(batch)
+        print(f"  Stored batch {i // BATCH_SIZE + 1} | {total_stored}/{len(new_articles)}")
+
+    print(f"  Done. Total chunks in ChromaDB: {_collection.count()}")
+
+
+def get_collection():
+    """Return the ChromaDB collection — used by retrieval module."""
+    return _collection
+
+
+def get_model():
+    """Return the embedding model — used by retrieval module."""
+    return _model

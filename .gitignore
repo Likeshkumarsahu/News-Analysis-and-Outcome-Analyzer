@@ -1,21 +1,39 @@
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
-*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
 venv/
+env/
+.venv/
+
+# Environment variables — NEVER commit API keys
 .env
 
-# Data and Models (Large files)
-data/
-models/outcome_model/
-chroma/
+# Data files — too large for GitHub
+data/raw_news.json
+data/processed_news.json
+data/bulkNews/
 
-# IDEs and OS
-.vscode/
-.idea/
-.DS_Store
+# ChromaDB storage
+storage/
+
+# HuggingFace cache
+.cache/
+
+# Jupyter
 .ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
 
-# Logs
-*.log
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+*.lock
