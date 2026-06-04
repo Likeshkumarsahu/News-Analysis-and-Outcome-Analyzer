@@ -259,6 +259,7 @@ python ingestion_runner.py
 
 ### Step 2: Start Server
 
+
 ```bash
 ollama serve &
 python server.py

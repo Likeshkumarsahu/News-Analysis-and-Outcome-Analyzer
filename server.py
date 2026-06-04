@@ -31,11 +31,6 @@ def index():
 
 @app.route("/api/analyze", methods=["POST"])
 def analyze():
-    """
-    POST /api/analyze
-    Body: { "query": "your query here" }
-    Returns full analysis result as JSON.
-    """
     data = request.get_json()
     if not data or not data.get("query", "").strip():
         return jsonify({"error": "Query is required"}), 400
@@ -49,27 +44,31 @@ def analyze():
         from models.sentiment       import analyze_sentiment
         from models.outcome         import predict_outcome
         from models.llm_explainer   import explain
+        from xai.lime_explainer     import explain_full
 
         # Step 1: Retrieve
         results = search(query, top_k=5)
         if not results:
             return jsonify({"error": "No relevant articles found."}), 404
 
-        # Step 2: Sentiment + Outcome on top result
+        # Step 2: top_text MUST be defined before anything uses it
         top_text  = results[0]["text"]
+
+        # Step 3: Sentiment + Outcome
         sentiment = analyze_sentiment(top_text)
         outcome   = predict_outcome(top_text)
 
-        # Step 3: LLM explanation
+        # Step 4: LLM explanation
         explanation = explain(
-            xai = xai,
             query=query,
             retrieved_articles=results,
             sentiment=sentiment,
             outcome=outcome,
         )
 
-        # Step 4: Format response
+        # Step 5: XAI
+        xai = explain_full(top_text)
+
         return jsonify({
             "query": query,
             "sentiment": {
@@ -83,6 +82,10 @@ def analyze():
                 "explanation": outcome["explanation"],
             },
             "explanation": explanation,
+            "xai": {
+                "sentiment": xai["sentiment_xai"],
+                "outcome":   xai["outcome_xai"],
+            },
             "articles": [
                 {
                     "title":     a["title"],

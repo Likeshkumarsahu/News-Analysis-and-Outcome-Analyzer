@@ -1,31 +1,38 @@
-const API = "";   // same origin
+const API = "";
 
-// ── Status bar ────────────────────────────────────────────────────────────────
+// ── Navigation ────────────────────────────────────────────
+function showSection(name) {
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+  document.getElementById("section-" + name).classList.add("active");
+  event.currentTarget.classList.add("active");
+}
+
+// ── Status ────────────────────────────────────────────────
 async function checkStatus() {
   try {
     const res  = await fetch(`${API}/api/status`);
     const data = await res.json();
-    const bar  = document.getElementById("status-bar");
+    const el   = document.getElementById("status-pill");
     if (data.status === "ok") {
-      bar.textContent = `✅ DB ready — ${data.articles_in_db} articles indexed`;
-      bar.style.color = "#68d391";
+      el.textContent = `✅ ${data.articles_in_db} articles`;
+      el.style.color = "var(--green)";
     } else {
-      bar.textContent = "⚠️ DB error";
-      bar.style.color = "#fc8181";
+      el.textContent = "⚠️ DB error";
     }
   } catch {
-    document.getElementById("status-bar").textContent = "⚠️ Server offline";
+    document.getElementById("status-pill").textContent = "⚠️ Offline";
   }
 }
 
-// ── Analyze ───────────────────────────────────────────────────────────────────
+// ── Analyze ───────────────────────────────────────────────
 async function analyzeQuery() {
   const query = document.getElementById("query-input").value.trim();
   if (!query) return;
 
   showLoader(true);
   hideError();
-  hideResults();
+  document.getElementById("results").classList.add("hidden");
 
   try {
     const res  = await fetch(`${API}/api/analyze`, {
@@ -33,93 +40,93 @@ async function analyzeQuery() {
       headers: { "Content-Type": "application/json" },
       body:    JSON.stringify({ query }),
     });
-
     const data = await res.json();
 
-    if (!res.ok || data.error) {
-      showError(data.error || "Something went wrong.");
-      return;
-    }
-
+    if (!res.ok || data.error) { showError(data.error || "Something went wrong."); return; }
     renderResults(data);
 
-  } catch (err) {
+  } catch {
     showError("Could not reach the server. Is Flask running?");
   } finally {
     showLoader(false);
   }
 }
 
-// ── Ingest ────────────────────────────────────────────────────────────────────
+// ── Ingest ────────────────────────────────────────────────
 async function triggerIngest() {
-  const btn = document.getElementById("ingest-btn");
+  const btn = document.querySelector(".btn-refresh");
   btn.textContent = "⏳ Refreshing...";
   btn.disabled = true;
-
   try {
     const res  = await fetch(`${API}/api/ingest`, { method: "POST" });
     const data = await res.json();
     alert(data.message || data.error);
     checkStatus();
-  } catch {
-    alert("Ingestion failed. Check server logs.");
-  } finally {
+  } catch { alert("Ingestion failed."); }
+  finally {
     btn.textContent = "🔄 Refresh News";
     btn.disabled = false;
   }
 }
 
-// ── Render ────────────────────────────────────────────────────────────────────
+// ── Render ────────────────────────────────────────────────
 function renderResults(data) {
-  if (data.xai) renderXAI(data.xai);
-  // Sentiment card
-  const sLabel = data.sentiment.label;
+  // Sentiment
+  const sLabel = (data.sentiment.label || "").toUpperCase();
+  const sConf  = data.sentiment.confidence;
   const sEl    = document.getElementById("sentiment-label");
-  sEl.textContent  = sLabel;
-  sEl.className    = `card-value ${sLabel}`;
-  document.getElementById("sentiment-conf").textContent =
-    `Confidence: ${(data.sentiment.confidence * 100).toFixed(1)}%`;
+  sEl.textContent = sLabel;
+  sEl.className   = `card-value ${sLabel}`;
+  document.getElementById("sentiment-conf").textContent = `Confidence: ${(sConf * 100).toFixed(1)}%`;
+  document.getElementById("sentiment-bar").style.width = `${sConf * 100}%`;
 
-  // Impact card
-  const iLabel = data.outcome.impact;
+  // Impact
+  const iLabel = (data.outcome.impact || "").toUpperCase();
+  const iConf  = data.outcome.confidence;
   const iEl    = document.getElementById("impact-label");
   iEl.textContent = iLabel;
   iEl.className   = `card-value ${iLabel}`;
-  document.getElementById("impact-conf").textContent =
-    `Confidence: ${(data.outcome.confidence * 100).toFixed(0)}%`;
+  document.getElementById("impact-conf").textContent = `Confidence: ${(iConf * 100).toFixed(0)}%`;
+  document.getElementById("impact-bar").style.width = `${iConf * 100}%`;
 
-  // Impact signals
-  const signalsList = document.getElementById("signals-list");
-  signalsList.innerHTML = "";
-  if (data.outcome.matched && data.outcome.matched.length > 0) {
+  // Sources count
+  document.getElementById("sources-count").textContent = data.articles.length;
+  const sources = [...new Set(data.articles.map(a => a.source))].join(", ");
+  document.getElementById("sources-names").textContent = sources;
+
+  // Signals
+  const sigList = document.getElementById("signals-list");
+  sigList.innerHTML = "";
+  if (data.outcome.matched?.length) {
     data.outcome.matched.forEach(kw => {
-      const tag = document.createElement("span");
-      tag.className   = "signal-tag";
-      tag.textContent = kw;
-      signalsList.appendChild(tag);
+      const t = document.createElement("span");
+      t.className   = "tag";
+      t.textContent = kw;
+      sigList.appendChild(t);
     });
   } else {
-    signalsList.innerHTML = "<span style='color:#4a5568;font-size:0.85rem'>No strong signals detected</span>";
+    sigList.innerHTML = "<span style='color:var(--text3);font-size:0.82rem'>No strong signals</span>";
   }
 
   // Explanation
   document.getElementById("explanation-text").textContent = data.explanation;
 
+  // XAI
+  if (data.xai) renderXAI(data.xai);
+
   // Articles
-  const articlesList = document.getElementById("articles-list");
-  articlesList.innerHTML = "";
+  const artList = document.getElementById("articles-list");
+  artList.innerHTML = "";
   data.articles.forEach(art => {
-    articlesList.innerHTML += `
+    artList.innerHTML += `
       <div class="article-card">
-        <div class="article-title">
-          ${escHtml(art.title)}
+        <div class="article-top">
+          <div class="article-title">${escHtml(art.title)}</div>
           <span class="score-badge">score: ${art.score}</span>
         </div>
         <div class="article-meta">${escHtml(art.source)} · ${escHtml(art.published || "")}</div>
         <div class="article-snippet">${escHtml(art.text)}</div>
-        <a class="article-link" href="${escHtml(art.link)}" target="_blank" rel="noopener">
-          Read full article →
-        </a>
+        <a class="article-link" href="${escHtml(art.link)}" target="_blank" rel="noopener">Read full article →</a>
       </div>`;
   });
 
@@ -127,73 +134,42 @@ function renderResults(data) {
 }
 
 function renderXAI(xai) {
-  // Find or create XAI section
-  let xaiBlock = document.getElementById("xai-block");
-  if (!xaiBlock) return;
+  const block = document.getElementById("xai-block");
+  if (!block) return;
 
   const s = xai.sentiment;
   const o = xai.outcome;
 
-  let html = `
-    <div class="xai-section">
-      <div class="xai-title">Sentiment XAI — <span class="${s.label}">${s.label}</span></div>
-      <p class="xai-desc">${s.explanation}</p>
-      <div class="xai-words">
-        ${s.top_words.slice(0,6).map(w => `
-          <span class="xai-word ${w.direction}" title="weight: ${w.weight}">
-            ${escHtml(w.word)}
-            <span class="xai-bar" style="width:${Math.min(Math.abs(w.weight)*200,60)}px"></span>
-          </span>`).join("")}
+  if (!s && !o) { block.innerHTML = "<span style='color:var(--text3)'>XAI not available</span>"; return; }
+
+  block.innerHTML = `
+    <div class="xai-row">
+      <div>
+        <div class="xai-section-title">Sentiment — <span class="${s?.label}">${s?.label || "—"}</span></div>
+        <p class="xai-desc">${escHtml(s?.explanation || "")}</p>
+        <div class="xai-words">
+          ${(s?.top_words || []).slice(0,6).map(w => `
+            <span class="xai-word ${w.direction}" title="weight: ${w.weight}">
+              ${escHtml(w.word)}
+              <span class="xai-bar" style="width:${Math.min(Math.abs(w.weight)*250,50)}px"></span>
+            </span>`).join("")}
+        </div>
       </div>
-    </div>
-    <div class="xai-section" style="margin-top:14px">
-      <div class="xai-title">Impact XAI — <span class="${o.impact}">${o.impact}</span></div>
-      <p class="xai-desc">${o.explanation}</p>
-      <div class="xai-words">
-        ${o.top_words.slice(0,6).map(w => `
-          <span class="xai-word ${w.direction}" title="weight: ${w.weight}">
-            ${escHtml(w.word)}
-            <span class="xai-bar" style="width:${Math.min(Math.abs(w.weight)*200,60)}px"></span>
-          </span>`).join("")}
+      <div>
+        <div class="xai-section-title">Impact — <span class="${o?.impact}">${o?.impact || "—"}</span></div>
+        <p class="xai-desc">${escHtml(o?.explanation || "")}</p>
+        <div class="xai-words">
+          ${(o?.top_words || []).slice(0,6).map(w => `
+            <span class="xai-word ${w.direction}" title="weight: ${w.weight}">
+              ${escHtml(w.word)}
+              <span class="xai-bar" style="width:${Math.min(Math.abs(w.weight)*250,50)}px"></span>
+            </span>`).join("")}
+        </div>
       </div>
     </div>`;
-
-  xaiBlock.innerHTML = html;
 }
 
-async function runEvaluation() {
-  const btn = document.getElementById("eval-btn");
-  btn.textContent = "⏳ Evaluating... (1-2 min)";
-  btn.disabled = true;
-
-  try {
-    const res  = await fetch(`${API}/api/evaluate`, { method: "POST" });
-    const data = await res.json();
-
-    if (data.error) {
-      alert("Evaluation failed: " + data.error);
-      return;
-    }
-
-    const s = data.scores;
-    alert(
-      `RAGAS Evaluation Results\n\n` +
-      `Faithfulness:      ${s.faithfulness}\n` +
-      `Answer Relevancy:  ${s.answer_relevancy}\n` +
-      `Context Recall:    ${s.context_recall}\n` +
-      `Context Precision: ${s.context_precision}\n` +
-      `─────────────────────────\n` +
-      `Overall Score:     ${s.overall}`
-    );
-  } catch {
-    alert("Evaluation request failed.");
-  } finally {
-    btn.textContent = "📊 Run Evaluation";
-    btn.disabled = false;
-  }
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────
 function showLoader(on) {
   document.getElementById("loader").classList.toggle("hidden", !on);
   document.getElementById("analyze-btn").disabled = on;
@@ -211,21 +187,13 @@ function showError(msg) {
   el.classList.remove("hidden");
 }
 
-function hideResults() {
-  document.getElementById("results").classList.add("hidden");
-}
-
 function escHtml(str) {
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+  return String(str || "")
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 
-// Enter key triggers analyze
 document.getElementById("query-input")
   .addEventListener("keydown", e => { if (e.key === "Enter") analyzeQuery(); });
 
-// Check status on load
 checkStatus();

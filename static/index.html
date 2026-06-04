@@ -1,84 +1,175 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>News Analysis & Outcome Analyzer</title>
-  <link rel="stylesheet" href="/style.css" />
+  <title>Newsana — News Analysis & Outcome Analyzer</title>
+  <link rel="stylesheet" href="/style.css"/>
 </head>
 <body>
 
-  <header>
-    <h1>📰 News Analysis & Outcome Analyzer</h1>
-    <p class="subtitle">RAG · Sentiment · Impact Prediction · XAI</p>
-    <div id="status-bar">Checking DB...</div>
-  </header>
-
-  <main>
-    <!-- Search -->
-    <section class="search-box">
-      <input
-        type="text"
-        id="query-input"
-        placeholder="Enter a news topic or query... e.g. India Pakistan tension"
-        autocomplete="off"
-      />
-      <button id="analyze-btn" onclick="analyzeQuery()">Analyze</button>
-      <button id="ingest-btn" onclick="triggerIngest()">🔄 Refresh News</button>
-      <button id="eval-btn" onclick="runEvaluation()">📊 Run Evaluation</button>
-    </section>
-
-    <!-- Loading -->
-    <div id="loader" class="hidden">
-      <div class="spinner"></div>
-      <p>Analyzing... this may take a few seconds</p>
+  <aside class="sidebar">
+    <div class="logo">
+      <span class="logo-icon">📰</span>
+      <span class="logo-text">Newsana</span>
     </div>
+    <nav class="nav">
+      <a class="nav-item active" onclick="showSection('analyze')">🔍 Analyze</a>
+      <a class="nav-item" onclick="showSection('about')">ℹ️ About</a>
+    </nav>
+    <div class="sidebar-bottom">
+      <div id="status-pill">Checking...</div>
+      <button class="btn-refresh" onclick="triggerIngest()">🔄 Refresh News</button>
+    </div>
+  </aside>
 
-    <!-- Error -->
-    <div id="error-box" class="hidden"></div>
+  <main class="main">
 
-    <!-- Results -->
-    <section id="results" class="hidden">
+    <!-- Analyze Section -->
+    <section id="section-analyze" class="section active">
 
-      <!-- Sentiment + Impact cards -->
-      <div class="cards-row">
-        <div class="card" id="sentiment-card">
-          <div class="card-label">Sentiment</div>
-          <div class="card-value" id="sentiment-label">—</div>
-          <div class="card-sub" id="sentiment-conf">—</div>
+      <div class="page-header">
+        <h1>News Analysis</h1>
+        <p>RAG · Sentiment · Impact · XAI · Local LLM</p>
+      </div>
+
+      <!-- Search -->
+      <div class="search-wrap">
+        <div class="search-inner">
+          <span class="search-icon">🔍</span>
+          <input
+            type="text"
+            id="query-input"
+            placeholder="Enter a news topic... e.g. Gaza ceasefire, India Pakistan tension"
+            autocomplete="off"
+          />
+          <button id="analyze-btn" onclick="analyzeQuery()">Analyze</button>
         </div>
-        <div class="card" id="impact-card">
-          <div class="card-label">Impact Level</div>
-          <div class="card-value" id="impact-label">—</div>
-          <div class="card-sub" id="impact-conf">—</div>
+      </div>
+
+      <!-- Loader -->
+      <div id="loader" class="loader hidden">
+        <div class="loader-dots">
+          <span></span><span></span><span></span>
         </div>
+        <p>Analyzing with RAG pipeline...</p>
       </div>
 
-      <!-- Impact signals -->
-      <div class="section-block" id="signals-block">
-        <h3>⚡ Impact Signals</h3>
-        <div id="signals-list"></div>
-      </div>
+      <!-- Error -->
+      <div id="error-box" class="error-box hidden"></div>
 
-      <!-- XAI Explanations -->
-      <div class="section-block" id="xai-section">
-        <h3>🔍 Explainability (LIME)</h3>
-        <div id="xai-block"></div>
-      </div>
+      <!-- Results -->
+      <div id="results" class="hidden">
 
-      <!-- LLM Explanation -->
-      <div class="section-block">
-        <h3>🤖 AI Explanation</h3>
-        <p id="explanation-text"></p>
-      </div>
+        <!-- Top cards row -->
+        <div class="cards-row">
+          <div class="card card-sentiment" id="card-sentiment">
+            <div class="card-icon">💬</div>
+            <div class="card-label">Sentiment</div>
+            <div class="card-value" id="sentiment-label">—</div>
+            <div class="card-bar">
+              <div class="card-bar-fill" id="sentiment-bar"></div>
+            </div>
+            <div class="card-sub" id="sentiment-conf">—</div>
+          </div>
 
-      <!-- Retrieved Articles -->
-      <div class="section-block">
-        <h3>📰 Retrieved Articles</h3>
-        <div id="articles-list"></div>
-      </div>
+          <div class="card card-impact" id="card-impact">
+            <div class="card-icon">⚡</div>
+            <div class="card-label">Impact Level</div>
+            <div class="card-value" id="impact-label">—</div>
+            <div class="card-bar">
+              <div class="card-bar-fill" id="impact-bar"></div>
+            </div>
+            <div class="card-sub" id="impact-conf">—</div>
+          </div>
 
+          <div class="card card-articles">
+            <div class="card-icon">📄</div>
+            <div class="card-label">Sources Found</div>
+            <div class="card-value" id="sources-count">—</div>
+            <div class="card-sub" id="sources-names">—</div>
+          </div>
+        </div>
+
+        <!-- Impact signals -->
+        <div class="block" id="signals-block">
+          <div class="block-header">
+            <span class="block-icon">⚡</span>
+            <span>Impact Signals</span>
+          </div>
+          <div id="signals-list" class="tags-row"></div>
+        </div>
+
+        <!-- AI Explanation -->
+        <div class="block">
+          <div class="block-header">
+            <span class="block-icon">🤖</span>
+            <span>AI Explanation <span class="badge">Mistral 7B</span></span>
+          </div>
+          <p id="explanation-text" class="explanation-text"></p>
+        </div>
+
+        <!-- XAI -->
+        <div class="block">
+          <div class="block-header">
+            <span class="block-icon">🔬</span>
+            <span>Explainability <span class="badge">LIME</span></span>
+          </div>
+          <div id="xai-block"></div>
+        </div>
+
+        <!-- Articles -->
+        <div class="block">
+          <div class="block-header">
+            <span class="block-icon">📰</span>
+            <span>Retrieved Articles</span>
+          </div>
+          <div id="articles-list"></div>
+        </div>
+
+      </div>
     </section>
+
+    <!-- About Section -->
+    <section id="section-about" class="section hidden">
+      <div class="page-header">
+        <h1>About Newsana</h1>
+        <p>End-to-end RAG pipeline for news analysis</p>
+      </div>
+      <div class="about-grid">
+        <div class="about-card">
+          <div class="about-icon">🔍</div>
+          <h3>Hybrid Retrieval</h3>
+          <p>BM25 keyword search + semantic vector search combined with CrossEncoder reranking for accurate article retrieval.</p>
+        </div>
+        <div class="about-card">
+          <div class="about-icon">💬</div>
+          <h3>RoBERTa Sentiment</h3>
+          <p>Twitter-trained RoBERTa transformer model for accurate news sentiment classification.</p>
+        </div>
+        <div class="about-card">
+          <div class="about-icon">⚡</div>
+          <h3>Impact Prediction</h3>
+          <p>ML-based impact prediction classifying news as HIGH, MEDIUM, or LOW impact.</p>
+        </div>
+        <div class="about-card">
+          <div class="about-icon">🔬</div>
+          <h3>LIME XAI</h3>
+          <p>Word-level explainability showing exactly which words drove each prediction decision.</p>
+        </div>
+        <div class="about-card">
+          <div class="about-icon">🤖</div>
+          <h3>Local LLM</h3>
+          <p>Mistral 7B running via Ollama — fully offline, no API keys, no rate limits.</p>
+        </div>
+        <div class="about-card">
+          <div class="about-icon">📊</div>
+          <h3>ChromaDB RAG</h3>
+          <p>Vector database with persistent storage of all-MiniLM-L6-v2 embeddings.</p>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <script src="/script.js"></script>

@@ -7,10 +7,12 @@ from datetime import datetime
 # ── RSS feed sources ──────────────────────────────────────────────────────────
 RSS_FEEDS = {
     "BBC":         "http://feeds.bbci.co.uk/news/rss.xml",
-    "Reuters":     "https://feeds.reuters.com/reuters/topNews",
+    "Economic Times": "https://economictimes.indiatimes.com/rssfeedsdefault.cms",
     "Al Jazeera":  "https://www.aljazeera.com/xml/rss/all.xml",
     "The Hindu":   "https://www.thehindu.com/news/feeder/default.rss",
     "NDTV":        "https://feeds.feedburner.com/ndtvnews-top-stories",
+    "Financial Express": "https://syndication.financialexpress.com/rss/latest-news.xml",
+    "Mint": "https://www.livemint.com/rss/homepage"
 }
 
 RAW_PATH = "data/raw_news.json"

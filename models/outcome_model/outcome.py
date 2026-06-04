@@ -67,7 +67,7 @@ def predict_outcome(text: str) -> dict:
         )
 
         return {
-            "impact":      label,
+            "impact":      str(label),        
             "confidence":  confidence,
             "matched":     top_words,
             "explanation": explanation,

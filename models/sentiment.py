@@ -3,7 +3,7 @@ import torch
 
 import os
 os.environ["TRANSFORMERS_OFFLINE"] = "1"
-os.environ["HF_DATASETS_OFFLINE"] = "1"
+os.environ["HF_HUB_OFFLINE"] = "1"
 
 # Load once at module level
 print("  Loading RoBERTa sentiment model...")
