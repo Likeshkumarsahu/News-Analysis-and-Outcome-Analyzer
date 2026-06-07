@@ -37,3 +37,5 @@ notebooks/.ipynb_checkpoints/
 .DS_Store
 Thumbs.db
 *.lockdata/
+data/
+storage/

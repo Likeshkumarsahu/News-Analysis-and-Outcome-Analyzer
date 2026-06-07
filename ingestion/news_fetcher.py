@@ -6,13 +6,15 @@ from datetime import datetime
 
 # ── RSS feed sources ──────────────────────────────────────────────────────────
 RSS_FEEDS = {
-    "BBC":         "http://feeds.bbci.co.uk/news/rss.xml",
-    "Economic Times": "https://economictimes.indiatimes.com/rssfeedsdefault.cms",
-    "Al Jazeera":  "https://www.aljazeera.com/xml/rss/all.xml",
-    "The Hindu":   "https://www.thehindu.com/news/feeder/default.rss",
-    "NDTV":        "https://feeds.feedburner.com/ndtvnews-top-stories",
-    "Financial Express": "https://syndication.financialexpress.com/rss/latest-news.xml",
-    "Mint": "https://www.livemint.com/rss/homepage"
+    "BBC":              "http://feeds.bbci.co.uk/news/rss.xml",
+    "Al Jazeera":       "https://www.aljazeera.com/xml/rss/all.xml",
+    "The Hindu":        "https://www.thehindu.com/news/feeder/default.rss",
+    "NDTV":             "https://feeds.feedburner.com/ndtvnews-top-stories",
+    "India Today":      "https://www.indiatoday.in/rss/home",        # ← new
+    "Times of India":   "https://timesofindia.indiatimes.com/rssfeedstopstories.cms",  # ← new
+    "Hindustan Times":  "https://www.hindustantimes.com/feeds/rss/india-news/rssfeed.xml",  # ← new
+    "Economic Times":   "https://economictimes.indiatimes.com/rssfeedstopstories.cms",
+    "Reuters":          "https://feeds.reuters.com/reuters/topNews",
 }
 
 RAW_PATH = "data/raw_news.json"

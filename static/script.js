@@ -1,11 +1,21 @@
+window.showSection = function(name, btn) {
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+  const sec = document.getElementById("section-" + name);
+  if (sec) sec.classList.add("active");
+  if (btn) btn.classList.add("active");
+}
+
+
 const API = "";
 
 // ── Navigation ────────────────────────────────────────────
-function showSection(name) {
+function showSection(name, btn) {
   document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
   document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
-  document.getElementById("section-" + name).classList.add("active");
-  event.currentTarget.classList.add("active");
+  const sec = document.getElementById("section-" + name);
+  if (sec) sec.classList.add("active");
+  if (btn) btn.classList.add("active");
 }
 
 // ── Status ────────────────────────────────────────────────
@@ -193,7 +203,249 @@ function escHtml(str) {
     .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 
-document.getElementById("query-input")
-  .addEventListener("keydown", e => { if (e.key === "Enter") analyzeQuery(); });
+window.addEventListener("load", () => {
+  const qi = document.getElementById("query-input");
+  if (qi) qi.addEventListener("keydown", e => { if (e.key === "Enter") analyzeQuery(); });
+});
 
 checkStatus();
+
+// ── Knowledge Graph ───────────────────────────────────────
+const KG_COLORS = {
+  PERSON: '#5B8AF5',
+  ORG:    '#4BBFA5',
+  GPE:    '#F5A623',
+  EVENT:  '#E24B4A',
+  NORP:   '#A78BFA',
+  OTHER:  '#888',
+};
+
+let kgData = null;
+let kgSim  = null;
+let kgType = 'ALL';
+
+async function loadGraph() {
+  const btn = document.getElementById('graph-load-btn');
+  const status = document.getElementById('graph-status');
+  btn.disabled = true;
+  btn.textContent = '⏳ Loading...';
+  status.textContent = '';
+
+  try {
+    const res  = await fetch('/api/graph');
+    const data = await res.json();
+    if (data.error) { status.textContent = data.error; return; }
+    kgData = data;
+    renderGraph(data);
+    renderGraphMeta(data);
+  } catch(e) {
+    status.textContent = 'Failed to load graph: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Load Graph';
+  }
+}
+
+async function rebuildGraph() {
+  const btn = document.getElementById('graph-rebuild-btn');
+  const status = document.getElementById('graph-status');
+  btn.disabled = true;
+  btn.textContent = '⏳ Rebuilding...';
+  try {
+    const res  = await fetch('/api/graph/rebuild', { method: 'POST' });
+    const data = await res.json();
+    status.textContent = data.message || data.error;
+    if (!data.error) await loadGraph();
+  } catch(e) {
+    status.textContent = 'Rebuild failed: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔄 Rebuild from DB';
+  }
+}
+
+function renderGraphMeta(data) {
+  const types = [...new Set(data.nodes.map(n => n.type))];
+
+  // Stats
+  document.getElementById('graph-stats-row').innerHTML = `
+    ${[
+      ['Entities', data.nodes.length],
+      ['Relations', data.links.length],
+      ['Types', types.length],
+    ].map(([l,v]) => `
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 18px;text-align:center;flex:1;min-width:80px">
+        <div style="font-size:1.4rem;font-weight:700;color:var(--accent)">${v}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px">${l}</div>
+      </div>`).join('')}
+  `;
+
+  // Filter buttons
+  document.getElementById('graph-controls').innerHTML = `
+    <span style="font-size:12px;color:var(--text2);align-self:center">Filter:</span>
+    ${['ALL', ...types].map(t => `
+      <button class="filter-btn${t==='ALL'?' kg-active':''}"
+        onclick="kgFilter('${t}',this)"
+        style="padding:4px 12px;border-radius:20px;border:1px solid var(--border2);
+               background:${t==='ALL'?'var(--accent)':'transparent'};
+               color:${t==='ALL'?'#0a0c10':'var(--text2)'};
+               font-size:12px;cursor:pointer">
+        ${t}
+      </button>`).join('')}
+  `;
+
+  // Legend
+  document.getElementById('graph-legend').innerHTML = `
+    <span style="font-size:11px;color:var(--text2)">Entity types:</span>
+    ${Object.entries(KG_COLORS).map(([t,c]) => `
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)">
+        <div style="width:10px;height:10px;border-radius:50%;background:${c};flex-shrink:0"></div>${t}
+      </div>`).join('')}
+    <span style="font-size:11px;color:var(--text2);margin-left:8px">Node size = mentions · Drag to explore</span>
+  `;
+}
+
+function kgFilter(type, btn) {
+  kgType = type;
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.style.background = 'transparent';
+    b.style.color = 'var(--text2)';
+  });
+  btn.style.background = 'var(--accent)';
+  btn.style.color = '#0a0c10';
+  if (kgData) renderGraph(kgData);
+}
+
+function renderGraph(data) {
+  document.getElementById('graph-placeholder').style.display = 'none';
+  const svgEl = document.getElementById('kg-svg');
+  svgEl.style.display = 'block';
+
+  // Filter
+  const nodes = kgType === 'ALL'
+    ? data.nodes.map(n => ({...n}))
+    : data.nodes.filter(n => n.type === kgType).map(n => ({...n}));
+  const ids = new Set(nodes.map(n => n.id));
+  const links = data.links
+    .filter(l => ids.has(l.source.id||l.source) && ids.has(l.target.id||l.target))
+    .map(l => ({...l}));
+
+  const W = svgEl.clientWidth  || 680;
+  const H = svgEl.clientHeight || 560;
+
+  const svg = d3.select('#kg-svg');
+  svg.selectAll('*').remove();
+
+  // Defs
+  svg.append('defs').append('marker')
+    .attr('id','kgarrow').attr('viewBox','0 0 10 6')
+    .attr('refX',10).attr('refY',3)
+    .attr('markerWidth',6).attr('markerHeight',6)
+    .attr('orient','auto')
+    .append('path').attr('d','M0,0L10,3L0,6').attr('fill','#555').attr('opacity',0.6);
+
+  const g = svg.append('g');
+  svg.call(d3.zoom().scaleExtent([0.2,4]).on('zoom', e => g.attr('transform', e.transform)));
+
+  const r = d => Math.max(9, Math.min(26, 7 + (d.mentions||1)*1.5));
+
+  const sim = d3.forceSimulation(nodes)
+    .force('link',      d3.forceLink(links).id(d => d.id).distance(d => 70 + (d.weight||1)*12))
+    .force('charge',    d3.forceManyBody().strength(-200))
+    .force('center',    d3.forceCenter(W/2, H/2))
+    .force('collision', d3.forceCollide().radius(d => r(d)+6));
+
+  kgSim = sim;
+
+  const link = g.append('g').selectAll('line').data(links).join('line')
+    .attr('stroke', d => KG_COLORS[(d.source.type||d.source)] || '#555')
+    .attr('stroke-opacity', 0.4)
+    .attr('stroke-width', d => Math.max(0.8, (d.weight||1)*0.6))
+    .attr('marker-end','url(#kgarrow)');
+
+  const node = g.append('g').selectAll('g').data(nodes).join('g')
+    .style('cursor','pointer')
+    .call(d3.drag()
+      .on('start', (e,d) => { if(!e.active) sim.alphaTarget(0.3).restart(); d.fx=d.x; d.fy=d.y; })
+      .on('drag',  (e,d) => { d.fx=e.x; d.fy=e.y; })
+      .on('end',   (e,d) => { if(!e.active) sim.alphaTarget(0); d.fx=null; d.fy=null; }))
+    .on('mouseover', (e,d) => kgTooltip(e,d,true))
+    .on('mouseout',  ()    => kgTooltip(null,null,false))
+    .on('click',     (e,d) => kgHighlight(d, node, link));
+
+  node.append('circle')
+    .attr('r',    d => r(d))
+    .attr('fill', d => KG_COLORS[d.type]||KG_COLORS.OTHER)
+    .attr('fill-opacity', 0.82)
+    .attr('stroke', d => KG_COLORS[d.type]||KG_COLORS.OTHER)
+    .attr('stroke-opacity', 0.4)
+    .attr('stroke-width', 1.5);
+
+  node.append('text')
+    .attr('dy', d => r(d)+12)
+    .attr('text-anchor','middle')
+    .attr('font-size','10px')
+    .attr('fill','var(--text2)')
+    .text(d => d.id.length > 12 ? d.id.slice(0,11)+'…' : d.id);
+
+  sim.on('tick', () => {
+    link
+      .attr('x1', d => d.source.x)
+      .attr('y1', d => d.source.y)
+      .attr('x2', d => {
+        const dx=d.target.x-d.source.x, dy=d.target.y-d.source.y;
+        const l=Math.sqrt(dx*dx+dy*dy)||1;
+        return d.target.x - dx/l*(r(d.target)+3);
+      })
+      .attr('y2', d => {
+        const dx=d.target.x-d.source.x, dy=d.target.y-d.source.y;
+        const l=Math.sqrt(dx*dx+dy*dy)||1;
+        return d.target.y - dy/l*(r(d.target)+3);
+      });
+    node.attr('transform', d => `translate(${d.x},${d.y})`);
+  });
+}
+
+function kgHighlight(d, node, link) {
+  const connected = new Set([d.id]);
+  link.each(l => {
+    const s=l.source.id||l.source, t=l.target.id||l.target;
+    if(s===d.id) connected.add(t);
+    if(t===d.id) connected.add(s);
+  });
+  node.selectAll('circle').attr('opacity', n => connected.has(n.id)?1:0.12);
+  node.selectAll('text').attr('opacity',   n => connected.has(n.id)?1:0.12);
+  link.attr('opacity', l => {
+    const s=l.source.id||l.source, t=l.target.id||l.target;
+    return (s===d.id||t===d.id) ? 1 : 0.03;
+  });
+}
+
+function kgTooltip(e, d, show) {
+  const tt = document.getElementById('kg-tooltip');
+  if (!show || !d) { tt.style.opacity=0; kgResetHighlight(); return; }
+  const wrap = document.getElementById('graph-container');
+  const rect = wrap.getBoundingClientRect();
+  tt.innerHTML = `
+    <div style="font-weight:500;font-size:13px;margin-bottom:3px">${d.id}</div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:3px">${d.type}</div>
+    <div style="font-size:11px;color:var(--accent)">${d.mentions} mentions</div>
+  `;
+  tt.style.opacity = 1;
+  const x = e.clientX - rect.left + 12;
+  const y = e.clientY - rect.top  - 10;
+  tt.style.left = Math.min(x, wrap.clientWidth-210)+'px';
+  tt.style.top  = Math.max(y-80, 8)+'px';
+}
+
+function kgResetHighlight() {
+  d3.selectAll('#kg-svg circle').attr('opacity',1);
+  d3.selectAll('#kg-svg text').attr('opacity',1);
+  d3.selectAll('#kg-svg line').attr('opacity',0.4);
+}
+
+window.analyzeQuery   = analyzeQuery;
+window.triggerIngest  = triggerIngest;
+window.loadGraph      = loadGraph;
+window.rebuildGraph   = rebuildGraph;
+window.kgFilter       = kgFilter;

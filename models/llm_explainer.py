@@ -45,7 +45,7 @@ Response:"""
         #     options={"num_predict": 400},
         # )
         response = ollama.chat(
-            model="mistral:latest",
+            model="llama3.2:3b",
             messages=[{"role": "user", "content": prompt}],
             options={
                 "num_predict": 300,
