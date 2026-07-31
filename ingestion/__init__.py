@@ -1,0 +1,1 @@
+from .news_fetcher import fetch_news, save_news, load_news

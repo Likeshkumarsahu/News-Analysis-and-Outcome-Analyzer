@@ -1,0 +1,34 @@
+services:
+
+  newsana:
+    build: .
+    container_name: newsana
+    network_mode: "host"
+    environment:
+      - TRANSFORMERS_OFFLINE=1
+      - HF_DATASETS_OFFLINE=1
+      - HF_HUB_OFFLINE=1
+      - OLLAMA_HOST=http://127.0.0.1:11434
+      - REDIS_HOST=127.0.0.1
+      - REDIS_PORT=6379
+      - PORT=5001
+    volumes:
+      - ./data:/app/data
+      - ./storage:/app/storage
+      - ./models/outcome_model:/app/models/outcome_model
+      - ./.env:/app/.env
+    restart: unless-stopped
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    container_name: newsana-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  redis_data:
