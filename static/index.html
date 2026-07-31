@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Newsana — News Analysis & Outcome Analyzer</title>
+  <link rel="stylesheet" href="/style.css"/>
+</head>
+<body>
+
+  <aside class="sidebar">
+    <div class="logo">
+      <span class="logo-icon">📰</span>
+      <span class="logo-text">Newsana</span>
+    </div>
+    <nav class="nav">
+      <a class="nav-item active" onclick="showSection('analyze',this)">🔍 Analyze</a>
+      <a class="nav-item" onclick="showSection('graph',this)">🕸️ Knowledge Graph</a>
+      <a class="nav-item" onclick="showSection('about',this)">ℹ️ About</a>
+      <button id="crew-btn" onclick="runCrew()"
+        style="padding:10px 18px;background:var(--purple);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer">
+        🤖 Deep Analysis (CrewAI)
+      </button>
+      <div class="provider-toggle-wrap">
+        <div class="provider-toggle">
+          <button id="provider-local-btn" class="provider-btn active" onclick="setProvider('local')">
+            🖥️ Local (Ollama)
+          </button>
+          <button id="provider-groq-btn" class="provider-btn" onclick="setProvider('groq')">
+            ☁️ Groq (Cloud)
+          </button>
+        </div>
+        <span id="provider-status" class="provider-status-text"></span>
+      </div>
+
+      <div id="groq-config" class="groq-config hidden">
+        <select id="groq-model-select" class="groq-select">
+          <option value="">Select free Groq model...</option>
+        </select>
+        <input type="password" id="groq-api-key" class="groq-input"
+          placeholder="Enter your Groq API key (get one free at console.groq.com)"/>
+        <button onclick="saveGroqConfig()" class="btn-secondary">Save</button>
+      </div>
+    </nav>
+    <div class="sidebar-bottom">
+      <div id="status-pill">Checking...</div>
+      <button class="btn-refresh" onclick="triggerIngest()">🔄 Refresh News</button>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- ── Analyze ── -->
+    <section id="section-analyze" class="section active">
+      <div class="page-header">
+        <h1>News Analysis</h1>
+        <p>RAG · Sentiment · Impact · XAI · Local LLM</p>
+      </div>
+      <div class="search-wrap">
+        <div class="search-inner">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="query-input"
+            placeholder="Enter a news topic... e.g. Gaza ceasefire, India Pakistan tension"
+            autocomplete="off"/>
+          <button id="analyze-btn" onclick="analyzeQuery()">Analyze</button>
+        </div>
+      </div>
+      <div id="loader" class="loader hidden">
+        <div class="loader-dots"><span></span><span></span><span></span></div>
+        <p>Analyzing with RAG pipeline...</p>
+      </div>
+      <div id="error-box" class="error-box hidden"></div>
+      <div id="results" class="hidden">
+        <div class="cards-row">
+          <div class="card card-sentiment" id="card-sentiment">
+            <div class="card-icon">💬</div>
+            <div class="card-label">Sentiment</div>
+            <div class="card-value" id="sentiment-label">—</div>
+            <div class="card-bar"><div class="card-bar-fill" id="sentiment-bar"></div></div>
+            <div class="card-sub" id="sentiment-conf">—</div>
+          </div>
+          <div class="card card-impact" id="card-impact">
+            <div class="card-icon">⚡</div>
+            <div class="card-label">Impact Level</div>
+            <div class="card-value" id="impact-label">—</div>
+            <div class="card-bar"><div class="card-bar-fill" id="impact-bar"></div></div>
+            <div class="card-sub" id="impact-conf">—</div>
+          </div>
+          <div class="card card-articles">
+            <div class="card-icon">📄</div>
+            <div class="card-label">Sources Found</div>
+            <div class="card-value" id="sources-count">—</div>
+            <div class="card-sub" id="sources-names">—</div>
+          </div>
+        </div>
+        <div class="block" id="signals-block">
+          <div class="block-header"><span class="block-icon">⚡</span><span>Impact Signals</span></div>
+          <div id="signals-list" class="tags-row"></div>
+        </div>
+        <div class="block">
+          <div class="block-header">
+            <span class="block-icon">🤖</span>
+            <span>AI Explanation <span class="badge">Mistral 7B</span></span>
+          </div>
+          <p id="explanation-text" class="explanation-text"></p>
+        </div>
+        <div class="block">
+          <div class="block-header">
+            <span class="block-icon">🔬</span>
+            <span>Explainability <span class="badge">LIME</span></span>
+          </div>
+          <div id="xai-block"></div>
+        </div>
+        <div class="block">
+          <div class="block-header"><span class="block-icon">📰</span><span>Retrieved Articles</span></div>
+          <div id="articles-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Knowledge Graph ── -->
+    <section id="section-graph" class="section hidden">
+      <div class="page-header">
+        <h1>Knowledge Graph</h1>
+        <p>Entity relationships extracted from news articles via SpaCy NER</p>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+        <button onclick="loadGraph()" id="graph-load-btn"
+          style="padding:10px 20px;background:var(--accent);color:#0a0c10;border:none;border-radius:8px;font-weight:700;cursor:pointer">
+          Load Graph
+        </button>
+        <button onclick="rebuildGraph()" id="graph-rebuild-btn"
+          style="padding:10px 20px;background:var(--bg3);color:var(--text2);border:1px solid var(--border2);border-radius:8px;cursor:pointer">
+          🔄 Rebuild from DB
+        </button>
+        <span id="graph-status" style="font-size:12px;color:var(--text2)"></span>
+      </div>
+      <div id="graph-stats-row" style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap"></div>
+      <div id="graph-controls" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"></div>
+      <<div id="graph-container" style="
+        width:100%;height:560px;
+        border:1px solid var(--border);border-radius:12px;
+        overflow:hidden;background:var(--bg2);position:relative">
+        <div id="graph-placeholder" style="
+          display:flex;flex-direction:column;align-items:center;
+          justify-content:center;height:100%;gap:12px;
+          color:var(--text2);font-size:14px">
+          <span style="font-size:2rem">🕸️</span>
+          <span>Click "Load Graph" to visualize entity relationships</span>
+        </div>
+        <svg id="kg-svg" style="width:100%;height:100%;display:none;position:absolute;top:0;left:0"></svg>
+        <div id="kg-tooltip" style="
+          position:absolute;background:var(--bg2);
+          border:1px solid var(--border2);border-radius:8px;
+          padding:10px 14px;font-size:12px;pointer-events:none;
+          opacity:0;transition:opacity .15s;max-width:200px;z-index:10"></div>
+      </div>
+      <div id="graph-legend" style="display:flex;gap:14px;flex-wrap:wrap;padding:8px 0 2px;align-items:center"></div>
+    </section>
+
+    <!-- ── About ── -->
+    <section id="section-about" class="section hidden">
+      <div class="page-header">
+        <h1>About Newsana</h1>
+        <p>End-to-end RAG pipeline for news analysis</p>
+      </div>
+      <div class="about-grid">
+        <div class="about-card"><div class="about-icon">🔍</div><h3>Hybrid Retrieval</h3><p>BM25 + semantic vector search with CrossEncoder reranking.</p></div>
+        <div class="about-card"><div class="about-icon">💬</div><h3>RoBERTa Sentiment</h3><p>Twitter-trained RoBERTa for accurate sentiment classification.</p></div>
+        <div class="about-card"><div class="about-icon">⚡</div><h3>ML Impact Prediction</h3><p>TF-IDF + Logistic Regression classifying HIGH / MEDIUM / LOW.</p></div>
+        <div class="about-card"><div class="about-icon">🔬</div><h3>LIME XAI</h3><p>Word-level explainability for every prediction.</p></div>
+        <div class="about-card"><div class="about-icon">🤖</div><h3>Local LLM</h3><p>Mistral 7B via Ollama — fully offline, no rate limits.</p></div>
+        <div class="about-card"><div class="about-icon">🕸️</div><h3>Knowledge Graph</h3><p>D3.js entity relationship graph from SpaCy NER extraction.</p></div>
+      </div>
+    </section>
+
+  </main>
+
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Newsana — News Analysis & Outcome Analyzer</title>
+  <link rel="stylesheet" href="/style.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  <script src="/script.js" defer></script>
+</head>
+
+</body>
+</html>
