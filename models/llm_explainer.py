@@ -1,7 +1,5 @@
-import os
-from llm.providers import call_llm
-from guardrails.hooks import before_agent_hook, after_agent_hook
 from observability.tracing import trace_llm_call
+from guardrails.graph import get_guardrail_graph
 
 
 def _build_prompt(query, retrieved_articles, sentiment, outcome) -> str:
@@ -43,52 +41,71 @@ def explain(
     provider: str = "local",
     llm_model: str = None,
     api_key: str = None,
+    thread_id: str = "default",
 ) -> dict:
     """
-    Full guardrailed explanation pipeline.
+    Runs the LangGraph guardrail pipeline: before-hook → (HITL interrupt) →
+    LangChain fallback-chain LLM call → after-hook.
 
-    Returns:
-        {
-            "text": str,
-            "provider_used": str,
-            "cost_usd": float,
-            "latency_ms": int,
-            "hitl_required": bool,
-            "blocked": bool,
-            "blocked_reason": str | None,
-        }
+    `thread_id` scopes the graph's checkpointer so a paused HITL query can be
+    resumed later by the same conversation/session.
     """
-    # ── Before-agent hook ──────────────────────────────────────────────────
-    pre = before_agent_hook(query, provider)
-    if not pre["allowed"]:
-        return {"text": f"Blocked: {pre['reason']}", "provider_used": None,
-                "cost_usd": 0.0, "latency_ms": 0, "hitl_required": False,
-                "blocked": True, "blocked_reason": pre["reason"]}
+    prompt = _build_prompt(query, retrieved_articles, sentiment, outcome)
+    graph = get_guardrail_graph()
 
-    if pre["requires_human"]:
+    initial_state = {
+        "query": query, "prompt": prompt, "provider": provider,
+        "llm_model": llm_model, "api_key": api_key,
+        "sanitized_query": None, "pii_found": [], "blocked": False,
+        "blocked_reason": None, "hitl_required": False,
+        "llm_result": None, "final_text": None,
+    }
+
+    config = {"configurable": {"thread_id": thread_id}}
+    result = graph.invoke(initial_state, config=config)
+
+    if result.get("hitl_required"):
         return {"text": "This request requires human approval before proceeding.",
                 "provider_used": None, "cost_usd": 0.0, "latency_ms": 0,
-                "hitl_required": True, "blocked": False, "blocked_reason": None}
+                "hitl_required": True, "blocked": False, "blocked_reason": None,
+                "pii_redacted": []}
 
-    sanitized_query = pre["sanitized_query"]
-    prompt = _build_prompt(sanitized_query, retrieved_articles, sentiment, outcome)
+    if result.get("blocked"):
+        return {"text": result.get("final_text") or f"Blocked: {result.get('blocked_reason')}",
+                "provider_used": None, "cost_usd": 0.0, "latency_ms": 0,
+                "hitl_required": False, "blocked": True,
+                "blocked_reason": result.get("blocked_reason"), "pii_redacted": []}
 
-    # ── LLM call with fallback chain ────────────────────────────────────────
-    result = call_llm(prompt, user_provider=provider, user_model=llm_model,
-                       user_key=api_key, max_tokens=300)
-
-    # ── After-agent hook ────────────────────────────────────────────────────
-    post = after_agent_hook(result["text"], result.get("provider_used"))
-
+    llm_result = result.get("llm_result") or {}
     return {
-        "text": post["final_text"],
-        "provider_used": result["provider_used"],
-        "model_used": result["model_used"],
-        "cost_usd": result["cost_usd"],
-        "latency_ms": result["latency_ms"],
-        "fallback_hops": result["fallback_hops"],
+        "text": result.get("final_text", ""),
+        "provider_used": llm_result.get("provider_used"),
+        "model_used": llm_result.get("model_used"),
+        "cost_usd": llm_result.get("cost_usd", 0.0),
+        "latency_ms": llm_result.get("latency_ms", 0),
+        "fallback_hops": llm_result.get("fallback_hops", 0),
         "hitl_required": False,
-        "blocked": not post["allowed"],
-        "blocked_reason": post["reason"] if not post["allowed"] else None,
-        "pii_redacted": pre.get("pii_found", []),
+        "blocked": False,
+        "blocked_reason": None,
+        "pii_redacted": result.get("pii_found", []),
     }
+
+
+def resume_hitl(thread_id: str, approved: bool) -> dict:
+    """
+    Call this from a new /api/hitl/resume endpoint after a human reviews
+    a paused query, to continue the graph past the interrupt() point.
+    """
+    from langgraph.types import Command
+    graph = get_guardrail_graph()
+    config = {"configurable": {"thread_id": thread_id}}
+    result = graph.invoke(Command(resume={"approved": approved}), config=config)
+
+    if result.get("blocked"):
+        return {"text": result.get("final_text"), "blocked": True,
+                "blocked_reason": result.get("blocked_reason")}
+
+    llm_result = result.get("llm_result") or {}
+    return {"text": result.get("final_text", ""), "blocked": False,
+            "provider_used": llm_result.get("provider_used"),
+            "cost_usd": llm_result.get("cost_usd", 0.0)}

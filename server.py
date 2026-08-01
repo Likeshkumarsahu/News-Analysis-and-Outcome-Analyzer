@@ -258,3 +258,11 @@ def pii_scan():
         return jsonify({"entities": scan_pii(text)})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/hitl/resume", methods=["POST"])
+def hitl_resume():
+    data = request.get_json()
+    from models.llm_explainer import resume_hitl
+    result = resume_hitl(data.get("thread_id", "default"), data.get("approved", False))
+    return jsonify(result)
