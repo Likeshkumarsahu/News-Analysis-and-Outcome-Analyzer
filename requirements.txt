@@ -6,14 +6,23 @@ google-genai
 lime
 numpy
 ollama
+openai
 python-dotenv
 rank-bm25
 scikit-learn
 sentence-transformers
 spacy
 transformers
+torch
 
 langchain
 langchain-groq
 
 redis
+langchain-core langgraph
+langchain-anthropic 
+langchain-openai 
+langchain-google-genai
+langchain-groq 
+langchain-ollama 
+langsmith

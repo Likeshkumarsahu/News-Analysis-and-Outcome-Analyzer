@@ -1,0 +1,272 @@
+/**
+ * ============================================================================
+ * NEWSANA AI — RESPONSIVE MEDIA QUERIES & BREAKPOINTS
+ * ============================================================================
+ * @file responsive.css
+ * @description Responsive rules adapting layout grids, sidebar navigation,
+ * top header controls, hero inputs, modal dialogs, and cards across screen sizes:
+ * - Desktop Wide (<1400px)
+ * - Laptop Desktop (<1200px)
+ * - Tablet & Mobile Sidebar Drawer (<992px)
+ * - Mobile Devices (<768px)
+ * - Small Phones (<576px)
+ * ============================================================================
+ */
+
+/* ── 1. Desktop Large Displays (<1400px) ─────────────────────────────────── */
+@media (max-width: 1400px) {
+  .content {
+    padding-left: 26px;
+    padding-right: 26px;
+  }
+  .news-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ── 2. Standard Laptops & Medium Desktops (<1200px) ─────────────────────── */
+@media (max-width: 1200px) {
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .exec-grid {
+    grid-template-columns: 1fr;
+  }
+  .hero-sub {
+    max-width: 540px;
+  }
+  .profile-info {
+    display: none;
+  }
+  .profile-btn {
+    padding: 5px;
+  }
+}
+
+/* ── 3. Tablets & Mobile Drawer Navigation (<992px) ──────────────────────── */
+@media (max-width: 992px) {
+  .sidebar {
+    transform: translateX(-100%);
+    box-shadow: none;
+  }
+  body.sidebar-open .sidebar {
+    transform: translateX(0);
+    box-shadow: var(--shadow-2);
+  }
+  .sidebar-close {
+    display: inline-flex;
+  }
+  .main-wrap {
+    margin-left: 0;
+  }
+  .topnav-toggle {
+    display: inline-flex;
+  }
+  .status-pill-mobile {
+    display: inline-flex;
+  }
+  .topnav-left .status-pill:not(.status-pill-mobile) {
+    display: none;
+  }
+  .charts-grid,
+  .explain-grid {
+    grid-template-columns: 1fr;
+  }
+  .crew-grid {
+    grid-template-columns: 1fr;
+  }
+  .news-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .hero-title {
+    font-size: clamp(30px, 6vw, 44px);
+  }
+  .topnav-search {
+    max-width: 320px;
+  }
+}
+
+/* ── 4. Mobile Viewports (<768px) ───────────────────────────────────────── */
+@media (max-width: 768px) {
+  .topnav {
+    padding: 0 16px;
+    gap: 10px;
+  }
+  .topnav-search {
+    display: none;
+  }
+  .breadcrumb .breadcrumb-root,
+  .breadcrumb i {
+    display: none;
+  }
+  .content {
+    padding: 22px 16px 48px;
+  }
+  .hero {
+    padding-top: 34px;
+  }
+  .hero-search {
+    flex-wrap: wrap;
+    padding: 10px 12px;
+    border-radius: 16px;
+  }
+  .hero-search input {
+    order: 2;
+    flex-basis: calc(100% - 40px);
+  }
+  .hero-search-icon {
+    order: 1;
+  }
+  .hero-submit {
+    order: 3;
+    flex: 1;
+    justify-content: center;
+  }
+  .hero-submit span {
+    display: none;
+  }
+  .hero-submit i {
+    margin: 0;
+  }
+  .hero-kbd {
+    display: none;
+  }
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .section-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .section-actions {
+    width: 100%;
+  }
+  .report-tabs {
+    flex-wrap: nowrap;
+  }
+  .agents-grid {
+    grid-template-columns: 1fr;
+  }
+  .feature-row {
+    grid-template-columns: 110px 1fr 48px;
+  }
+  .settings-layout {
+    grid-template-columns: 1fr;
+  }
+  .settings-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border-0);
+    padding: 10px 12px;
+  }
+  .settings-tab {
+    white-space: nowrap;
+  }
+  .form-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .form-input,
+  .form-select {
+    width: 100%;
+  }
+  .footer {
+    grid-template-columns: 1fr;
+    padding: 28px 20px 22px;
+  }
+  .footer-links {
+    justify-content: flex-start;
+  }
+}
+
+/* ── 5. Compact Small Mobile Phones (<576px) ────────────────────────────── */
+@media (max-width: 576px) {
+  .news-grid {
+    grid-template-columns: 1fr;
+  }
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .stat-card {
+    padding: 14px;
+  }
+  .stat-value {
+    font-size: 22px;
+    margin-top: 20px;
+  }
+  .stat-icon {
+    top: 12px;
+    right: 12px;
+    font-size: 13px;
+  }
+  .grid {
+    gap: 14px;
+  }
+  .chart-lg {
+    height: 260px;
+  }
+  .chart-sm {
+    height: 240px;
+  }
+  .graph-canvas {
+    min-height: 360px;
+  }
+  .gauge-value {
+    font-size: 36px;
+  }
+  .hero-quick {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .hero-quick .chip {
+    justify-content: center;
+  }
+  .toast {
+    min-width: 0;
+    max-width: calc(100vw - 40px);
+  }
+  .toast-wrap {
+    right: 16px;
+    left: 16px;
+  }
+  .chat-panel {
+    right: 12px;
+    left: 12px;
+    width: auto;
+    bottom: 88px;
+    height: calc(100vh - 100px);
+  }
+  .fab {
+    right: 18px;
+    bottom: 18px;
+  }
+  .modal {
+    padding: 12px;
+  }
+  .modal-panel {
+    max-height: calc(100vh - 24px);
+  }
+  .report-body {
+    padding: 18px 16px 22px;
+  }
+  .profile-btn .profile-info {
+    display: none;
+  }
+  .risk-table {
+    font-size: 11.5px;
+  }
+  .risk-table th,
+  .risk-table td {
+    padding: 8px 7px;
+  }
+}
+
+/* ── Desktop Viewport Desktop Adjustments (>=993px) ─────────────────────── */
+@media (min-width: 993px) {
+  .sidebar-close {
+    display: none !important;
+  }
+}

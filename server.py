@@ -38,16 +38,16 @@ def analyze():
     if not data or not data.get("query", "").strip():
         return jsonify({"error": "Query is required"}), 400
 
-    query        = data["query"].strip()
-    provider     = data.get("provider", "local")          # "local" or "groq"
-    groq_model   = data.get("groq_model")
-    groq_api_key = data.get("groq_api_key")
+    query      = data["query"].strip()
+    provider   = data.get("provider", "local")     # local | anthropic | openai | gemini | groq
+    llm_model  = data.get("llm_model")
+    api_key    = data.get("api_key")
 
     try:
         from cache.redis_cache import get_cached, set_cached
+        cache_key_extra = f"{provider}:{llm_model}"
 
-        # Check cache first (cache key includes provider, not the api key)
-        cached = get_cached(query, provider, groq_model)
+        cached = get_cached(query, provider, llm_model)
         if cached:
             cached["_cached"] = True
             return jsonify(cached)
@@ -68,53 +68,45 @@ def analyze():
         sentiment = analyze_sentiment(top_text)
         outcome   = predict_outcome(top_text)
 
-        explanation = explain(
-            query=query,
-            retrieved_articles=results,
-            sentiment=sentiment,
-            outcome=outcome,
-            provider=provider,
-            groq_model=groq_model,
-            groq_api_key=groq_api_key,
+        llm_result = explain(
+            query=query, retrieved_articles=results, sentiment=sentiment,
+            outcome=outcome, provider=provider, llm_model=llm_model, api_key=api_key,
         )
+
+        if llm_result["hitl_required"]:
+            return jsonify({"hitl_required": True, "message": llm_result["text"]}), 202
 
         xai = explain_full(top_text)
 
         result = {
             "query": query,
             "provider": provider,
-            "sentiment": {
-                "label":      sentiment["label"],
-                "confidence": sentiment["confidence"],
-            },
+            "sentiment": {"label": sentiment["label"], "confidence": sentiment["confidence"]},
             "outcome": {
-                "impact":      outcome["impact"],
-                "confidence":  outcome["confidence"],
-                "matched":     outcome["matched"],
-                "explanation": outcome["explanation"],
+                "impact": outcome["impact"], "confidence": outcome["confidence"],
+                "matched": outcome["matched"], "explanation": outcome["explanation"],
             },
-            "explanation": explanation,
-            "xai": {
-                "sentiment": xai["sentiment_xai"],
-                "outcome":   xai["outcome_xai"],
+            "explanation": llm_result["text"],
+            "llm_meta": {
+                "provider_used": llm_result["provider_used"],
+                "model_used":    llm_result["model_used"],
+                "cost_usd":      llm_result["cost_usd"],
+                "latency_ms":    llm_result["latency_ms"],
+                "fallback_hops": llm_result.get("fallback_hops", 0),
+                "pii_redacted":  llm_result.get("pii_redacted", []),
             },
+            "xai": {"sentiment": xai["sentiment_xai"], "outcome": xai["outcome_xai"]},
             "articles": [
-                {
-                    "title":     a["title"],
-                    "source":    a["source"],
-                    "link":      a["link"],
-                    "published": a["published"],
-                    "score":     round(float(a["score"]), 3),
-                    "text":      a["text"][:300],
-                }
+                {"title": a["title"], "source": a["source"], "link": a["link"],
+                 "published": a["published"], "score": round(float(a["score"]), 3),
+                 "text": a["text"][:300]}
                 for a in results[:5]
             ],
             "_cached": False,
         }
 
-        # Only cache successful, non-error explanations (avoid caching a broken Ollama/Groq response)
-        if "unavailable" not in explanation.lower():
-            set_cached(query, provider, result, groq_model)
+        if not llm_result["blocked"] and "unavailable" not in llm_result["text"].lower():
+            set_cached(query, provider, result, llm_model)
 
         return jsonify(result)
 
@@ -256,3 +248,13 @@ def crew_analyze():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+@app.route("/api/pii/scan", methods=["POST"])
+def pii_scan():
+    data = request.get_json()
+    text = data.get("text", "")
+    try:
+        from guardrails.pii import scan_pii
+        return jsonify({"entities": scan_pii(text)})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

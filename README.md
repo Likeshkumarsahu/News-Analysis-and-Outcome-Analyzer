@@ -1,160 +1,181 @@
-# 📰 News Analysis & Outcome Analyzer
+# 📰 Newsana AI — News Analysis & Outcome Analyzer
 
-A real-time, Retrieval-Augmented Generation (RAG) based news analysis system that fetches live news, performs sentiment analysis, predicts impact levels, explains decisions using Explainable AI (XAI), and generates natural language insights through a local Large Language Model (LLM) — all running locally on CPU without external APIs.
+A real-time, Retrieval-Augmented Generation (RAG) based news analysis and outcome forecasting system. It collects live news from multiple global RSS feeds, indexes documents in ChromaDB, builds entity Knowledge Graphs, performs hybrid search (BM25 + Semantic + CrossEncoder Reranking), classifies sentiment via RoBERTa, predicts event impact using Machine Learning (TF-IDF + Logistic Regression with rule-based fallback), explains decisions using Explainable AI (LIME), orchestrates multi-agent tasks via CrewAI, accelerates responses with Redis caching, and generates natural language insights through local LLMs (Ollama Llama 3.2) or Cloud APIs (Groq).
 
-> **6th Semester Engineering Project**
-> AI/ML Pipeline • RAG • XAI • Local LLM • Flask Dashboard
+> **6th Semester Engineering Project**  
+> AI/ML Pipeline • RAG • Knowledge Graph • CrewAI Agents • XAI • Local LLM / Groq • Redis • Flask Dashboard
 
 ---
 
 ## 🔍 Overview
 
-The system continuously collects news articles from multiple trusted sources, stores them in a vector database, retrieves relevant information using hybrid search techniques, analyzes sentiment and impact, generates explainable predictions, and presents results through a web interface.
+Newsana AI provides an end-to-end intelligence framework designed to digest raw, fast-moving news streams and transform them into structured, actionable, and explainable insights. 
 
 ### Key Capabilities
 
-* Fetches live news from RSS feeds
-* Performs Named Entity Recognition (NER) and preprocessing
-* Stores embeddings in ChromaDB
-* Hybrid retrieval using BM25 + Semantic Search + CrossEncoder reranking
-* Sentiment analysis using RoBERTa
-* Impact prediction (HIGH / MEDIUM / LOW)
-* Explainable AI using LIME
-* Natural language explanations using Mistral 7B via Ollama
-* Evaluation using custom RAG metrics
-* Interactive Flask-based dashboard
+* **Live Multi-Source Ingestion:** Automated fetching across 9 major global & regional RSS feeds (BBC, Al Jazeera, Reuters, The Hindu, NDTV, India Today, Times of India, Hindustan Times, Economic Times).
+* **Smart Deduplication & Preprocessing:** MD5 hash hashing prevents storing duplicate articles, followed by SpaCy NLP text cleaning and Named Entity Recognition (NER).
+* **Persistent Vector & Graph Indexing:** Chunks articles into ChromaDB vector storage (`all-MiniLM-L6-v2`) and extracts entity co-occurrence Knowledge Graphs using NetworkX.
+* **Hybrid Search Engine:** Combines sparse BM25 keyword matching with dense semantic vector search, followed by a CrossEncoder reranker (`ms-marco-MiniLM-L-6-v2`) for optimal precision.
+* **RoBERTa Sentiment Analysis:** Micro-fine-grained sentiment classification (POSITIVE, NEGATIVE, NEUTRAL) with confidence scores using Cardiff NLP's RoBERTa.
+* **Machine Learning Impact Classifier:** Predicts event impact severity (HIGH, MEDIUM, LOW) using a trained TF-IDF + Logistic Regression model with automatic rule-based signal fallback.
+* **Explainable AI (LIME XAI):** Computes word-level feature importance for sentiment and impact predictions to eliminate black-box AI opacity.
+* **Multi-Agent Architecture (CrewAI):** Sequential execution of 3 autonomous agents (Senior News Analyst, Strategic Intelligence Analyst, Editorial Fact Checker) for deep research dossiers.
+* **Dual-Engine LLM Explainer:** Local CPU-friendly generation via Ollama (`llama3.2:3b`) or cloud inference using free Groq models (Llama 3.3, Llama 3.1, Gemma 2, Mixtral).
+* **Redis Caching & Fast Response:** Query-level caching layer to instantly return recurring analysis results.
+* **Interactive Modern Web Dashboard:** Rich Flask-backed interface featuring dynamic gauges, Chart.js analytics, D3.js Knowledge Graph visualization, and real-time controls.
+* **Automated RAG Evaluation:** Built-in quantitative metric calculator measuring Context Precision, Context Recall, Answer Relevancy, and Faithfulness.
 
 ---
 
 # 🏗️ System Architecture
 
 ```text
-RSS Feeds (BBC, Al Jazeera, Reuters, The Hindu, NDTV)
-                        ↓
-              [Ingestion] feedparser
-              dedup via MD5 hash
-                        ↓
-           [Preprocessing] SpaCy NER
-           clean + extract entities
-                        ↓
-         ┌──────────────┴──────────────┐
-         ↓                             ↓
-  [ChromaDB]                   [Knowledge Graph]
-  all-MiniLM-L6-v2              NetworkX entities
-  vector embeddings
-         └──────────────┬──────────────┘
-                        ↓
-           [Hybrid Retrieval]
-           BM25 keyword search (top 20)
-         + Semantic vector search (top 20)
-         + CrossEncoder reranking → top 5
-                        ↓
-         ┌──────────────┼──────────────┐
-         ↓              ↓              ↓
-   [Sentiment]    [Outcome]       [LLM]
-   RoBERTa        Rule-based      Ollama
-   transformer    signals         Mistral 7B
-                  scoring         (local)
-         └──────────────┼──────────────┘
-                        ↓
-                [LIME XAI]
-           word-level explanations
-           for sentiment + impact
-                        ↓
-              ┌─────────┴─────────┐
-              ↓                   ↓
-         [Flask UI]         [Evaluation]
-         Dashboard          RAG Metrics
+               ┌────────────────────────────────────────────────────────┐
+               │         RSS News Sources (9 Feeds / Global & Regional)  │
+               └───────────────────────────┬────────────────────────────┘
+                                           │
+                                           ▼
+                         [Ingestion Engine] feedparser + MD5 Hash
+                                           │
+                                           ▼
+                        [NLP Preprocessing] SpaCy (en_core_web_sm)
+                                Entity Extraction & Cleaning
+                                           │
+                        ┌──────────────────┴──────────────────┐
+                        ▼                                     ▼
+            [Vector Database] ChromaDB               [Knowledge Graph]
+            embeddings: all-MiniLM-L6-v2             Entity Co-occurrence (JSON/NetworkX)
+                        └──────────────────┬──────────────────┘
+                                           │
+                                           ▼
+                              [Hybrid Search Engine]
+                              BM25 Keyword Search (Top 20)
+                            + Semantic Vector Search (Top 20)
+                            + CrossEncoder Reranking → Top 5
+                                           │
+        ┌───────────────────┬──────────────┼──────────────┬───────────────────┐
+        ▼                   ▼              ▼              ▼                   ▼
+  [Sentiment]          [Outcome ML]   [Lime XAI]     [LLM Engine]         [CrewAI Agents]
+  RoBERTa Model        TF-IDF + LogReg Word Feature   Ollama Llama 3.2    Analyst → Predictor
+  CardiffNLP           Impact Scoring  Importance    or Groq Cloud       → Fact Checker
+        └───────────────────┴──────────────┬──────────────┴───────────────────┘
+                                           │
+                                           ▼
+                                [Redis Caching Layer]
+                                           │
+                                           ▼
+                           [Flask Web Server & Dashboard]
+                           REST APIs • Chart.js • D3.js
 ```
 
 ---
 
 # 🛠️ Technology Stack
 
-| Component          | Tool/Library                            | Purpose                       |
-| ------------------ | --------------------------------------- | ----------------------------- |
-| News Ingestion     | feedparser                              | RSS feed collection           |
-| Deduplication      | MD5 Hashing                             | Prevent duplicate articles    |
-| NLP Processing     | SpaCy (`en_core_web_sm`)                | NER & text cleaning           |
-| Embeddings         | all-MiniLM-L6-v2                        | Semantic vector generation    |
-| Vector Database    | ChromaDB                                | Persistent vector storage     |
-| Keyword Search     | rank-bm25                               | Sparse retrieval              |
-| Reranking          | CrossEncoder (`ms-marco-MiniLM-L-6-v2`) | Relevance optimization        |
-| Sentiment Analysis | RoBERTa                                 | News sentiment classification |
-| Impact Prediction  | Rule-Based Engine                       | Transparent impact scoring    |
-| Explainability     | LIME                                    | Word-level feature importance |
-| LLM                | Ollama + Mistral 7B                     | Natural language explanations |
-| Knowledge Graph    | NetworkX                                | Entity relationship graph     |
-| Web Interface      | Flask + HTML/CSS/JS                     | Dashboard                     |
-| Evaluation         | Custom Metrics                          | RAG performance assessment    |
+| Component | Tool / Library | Purpose |
+| :--- | :--- | :--- |
+| **News Ingestion** | `feedparser` | Fetch live RSS article feeds |
+| **Deduplication** | MD5 Hashing | Article uniqueness verification |
+| **NLP & NER** | SpaCy (`en_core_web_sm`) | Text cleaning & Named Entity Recognition |
+| **Embeddings** | `all-MiniLM-L6-v2` | SentenceTransformer vector generation |
+| **Vector Storage** | ChromaDB | Local persistent vector database |
+| **Sparse Retrieval** | `rank-bm25` | Keyword-based BM25 search |
+| **Reranking** | `ms-marco-MiniLM-L-6-v2` | CrossEncoder relevance reranker |
+| **Sentiment Analysis** | RoBERTa (`twitter-roberta-base-sentiment-latest`) | Deep learning sentiment classification |
+| **Impact Prediction** | TF-IDF + Logistic Regression / Rule Engine | ML impact classifier with fallback |
+| **Explainable AI** | LIME (`lime`) | Word-level feature attribution |
+| **Multi-Agent System** | CrewAI (`crewai`) | Autonomous agent orchestration |
+| **LLM Inference** | Ollama (`llama3.2:3b`) & Groq API | Local or cloud natural language synthesis |
+| **Knowledge Graph** | NetworkX & D3.js | Entity relationship network building & visualization |
+| **Caching Layer** | Redis (`redis-py`) | High-speed response caching with TTL |
+| **Web Server & UI** | Flask, HTML5, CSS3, JavaScript, Chart.js | REST API & Interactive UI Dashboard |
+| **Evaluation** | Custom RAG Metrics | Faithfulness, Relevancy, Precision, Recall |
 
 ---
 
 # 📁 Project Structure
 
 ```text
-Newsana/
-├── main.py
-├── server.py
-├── ingestion_runner.py
-├── requirements.txt
-├── .env
+News-Analysis-and-Outcome-Analyzer/
+├── main.py                     # CLI entry point (full pipeline & query loop)
+├── server.py                   # Flask backend server providing REST APIs
+├── ingestion_runner.py         # Standalone news ingestion script
+├── requirements.txt            # Python dependencies
+├── pyproject.toml              # Project configuration
+├── Dockerfile                  # Container build instructions
+├── docker-compose.yml          # Multi-container orchestrator (Flask + Redis)
+├── start.sh                    # Startup wrapper script
+├── .env.example                # Sample environment variables configuration
 │
-├── ingestion/
+├── ingestion/                  # News fetcher module
 │   ├── __init__.py
-│   └── news_fetcher.py
+│   └── news_fetcher.py         # Multi-feed RSS parser with deduplication
 │
-├── preprocessing/
+├── preprocessing/              # NLP preprocessing module
 │   ├── __init__.py
-│   └── preprocess.py
+│   └── preprocess.py           # SpaCy text cleaner & NER entity tagger
 │
-├── embeddings/
+├── embeddings/                 # Vector database module
 │   ├── __init__.py
-│   └── embed_store.py
+│   └── embed_store.py          # SentenceTransformer & ChromaDB manager
 │
-├── retrieval/
+├── retrieval/                  # Hybrid search module
 │   ├── __init__.py
-│   └── search.py
+│   └── search.py               # BM25 + Vector Search + CrossEncoder Reranker
 │
-├── models/
+├── models/                     # AI & ML inference models
 │   ├── __init__.py
-│   ├── sentiment.py
-│   ├── outcome.py
-│   └── llm_explainer.py
+│   ├── sentiment.py            # RoBERTa sentiment classifier
+│   ├── outcome.py              # ML impact classifier (TF-IDF + LogReg) & fallback
+│   ├── llm_explainer.py        # Ollama local & Groq cloud LLM explainer
+│   └── outcome_model/          # Serialized ML model artifacts
 │
-├── xai/
+├── agents/                     # CrewAI multi-agent framework
 │   ├── __init__.py
-│   └── lime_explainer.py
+│   └── news_crew.py            # Senior Analyst, Strategic Predictor, Fact-Checker agents
 │
-├── evaluation/
+├── xai/                        # Explainable AI module
 │   ├── __init__.py
-│   ├── ragas_eval.py
-│   ├── eval_runner.py
-│   └── results.json
+│   └── lime_explainer.py       # LIME word importance calculator
 │
-├── static/
-│   ├── index.html
-│   ├── style.css
-│   └── script.js
+├── cache/                      # Performance caching layer
+│   ├── __init__.py
+│   └── redis_cache.py          # Redis connection & cache manager
 │
-├── data/
-│   ├── raw_news.json
-│   └── processed_news.json
+├── knowledge_graph/            # Entity network graph module
+│   ├── __init__.py
+│   └── graph_builder.py        # Co-occurrence entity graph builder
 │
-└── storage/
-    └── chroma/
+├── evaluation/                 # RAG evaluation benchmark
+│   ├── __init__.py
+│   ├── ragas_eval.py           # Precision, recall, relevancy & faithfulness metrics
+│   ├── eval_runner.py          # Command line evaluation runner
+│   └── results.json            # Metric evaluation output
+│
+├── notebooks/                  # Training notebooks & scripts
+│   └── train_outcome_model.py  # Trainer script for outcome ML model
+│
+├── static/                     # Web dashboard frontend
+│   ├── index.html              # Single Page Application HTML
+│   ├── style.css               # Modern glassmorphism & dark-mode styling
+│   ├── script.js               # Frontend controller & API integrator
+│   └── assets/                 # Icons, JS utilities, and mock data
+│
+├── data/                       # Raw & processed JSON news data
+└── storage/                    # Persistent ChromaDB vector storage
 ```
 
 ---
 
-# ⚙️ Installation
+# ⚙️ Installation & Setup
 
 ## Prerequisites
 
-* Python 3.10+
-* Ollama Installed
-* ~6 GB Available Storage
-* Internet Connection (First Run Only)
+* **Python:** 3.10 or 3.11
+* **Ollama:** Installed locally ([ollama.com](https://ollama.com/download))
+* **Redis:** Optional (for caching, automatically falls back gracefully if absent)
+* **Storage:** ~6 GB free space (for local ML models & vector storage)
 
 ---
 
@@ -162,41 +183,38 @@ Newsana/
 
 ```bash
 git clone https://github.com/Likeshkumarsahu/News-Analysis-and-Outcome-Analyzer.git
-
 cd News-Analysis-and-Outcome-Analyzer
 ```
 
 ---
 
-## 2. Create Virtual Environment
+## 2. Environment Setup
 
-### Using venv
+### Option A — Standard Virtual Environment (`venv`)
 
 ```bash
 python3 -m venv venv312
-
 source venv312/bin/activate
 ```
 
-### Using uv
+### Option B — Using `uv` (Fast)
 
 ```bash
 uv venv venv312
-
 source venv312/bin/activate
 ```
 
 ---
 
-## 3. Install PyTorch CPU Build
+## 3. Install PyTorch CPU & Dependencies
+
+Install PyTorch CPU first to keep installation lightweight:
 
 ```bash
 pip install torch --index-url https://download.pytorch.org/whl/cpu
 ```
 
----
-
-## 4. Install Dependencies
+Then install remaining requirements:
 
 ```bash
 pip install -r requirements.txt
@@ -204,7 +222,7 @@ pip install -r requirements.txt
 
 ---
 
-## 5. Download SpaCy Model
+## 4. Download SpaCy NLP Model
 
 ```bash
 python -m spacy download en_core_web_sm
@@ -212,38 +230,41 @@ python -m spacy download en_core_web_sm
 
 ---
 
-## 6. Setup Ollama + Mistral
+## 5. Configure Ollama (Local LLM Engine)
 
-Install Ollama:
-
-https://ollama.com/download
-
-Pull model:
+Install and run Ollama, then pull the target Llama 3.2 3B model:
 
 ```bash
-ollama pull mistral:latest
-```
+# Pull lightweight local model
+ollama pull llama3.2:3b
 
-Start Ollama:
-
-```bash
+# Start Ollama service
 ollama serve
 ```
 
 ---
 
-## 7. Configure Environment Variables
+## 6. Configure Environment Variables (`.env`)
 
-Create a `.env` file:
+Create a `.env` file in the project root:
 
 ```env
-TRANSFORMERS_OFFLINE=1
-HF_DATASETS_OFFLINE=1
+# Network & Host Settings
+OLLAMA_HOST=http://localhost:11434
+PORT=5000
+
+# Redis Cache Settings (Optional)
+REDIS_HOST=localhost
+REDIS_PORT=6379
+CACHE_TTL_SECONDS=3600
+
+# Optional Groq Cloud API Key (for cloud LLM mode)
+GROQ_API_KEY=your_groq_api_key_here
+
+# HuggingFace Offline Flags (optional)
+TRANSFORMERS_OFFLINE=0
+HF_DATASETS_OFFLINE=0
 ```
-
-No API keys are required.
-
-Everything runs locally through Ollama.
 
 ---
 
@@ -251,21 +272,20 @@ Everything runs locally through Ollama.
 
 ## Option A — Web Dashboard (Recommended)
 
-### Step 1: Run Ingestion
+### Step 1: Run Ingestion & Indexing Pipeline
+Fetch raw news, preprocess entities, and generate ChromaDB embeddings:
 
 ```bash
 python ingestion_runner.py
 ```
 
-### Step 2: Start Server
-
+### Step 2: Launch Web Server
 
 ```bash
-ollama serve &
 python server.py
 ```
 
-Open:
+Open your browser and navigate to:
 
 ```text
 http://localhost:5000
@@ -273,29 +293,43 @@ http://localhost:5000
 
 ---
 
-## Option B — Command Line
+## Option B — Command Line Interface (CLI)
 
-### Full Pipeline
+### Run Full Pipeline & Interactive Prompt Loop
 
 ```bash
-python main.py --query "India Pakistan tension"
+python main.py
 ```
 
-### Skip Ingestion
+### Query Directly (Skip Ingestion)
 
 ```bash
-python main.py --skip-ingest --query "India economic policy"
+python main.py --skip-ingest --query "India economic growth outlook"
 ```
 
-### Single Query
+### Single Direct Query Execution
 
 ```bash
-python main.py --skip-ingest --query "Gaza ceasefire"
+python main.py --skip-ingest --query "Global oil price trends"
 ```
 
 ---
 
-## Option C — Evaluation
+## Option C — Docker Deployment (Flask + Redis)
+
+Deploy using Docker Compose with built-in Redis caching:
+
+```bash
+docker-compose up --build
+```
+
+Access the application at `http://localhost:5000` (or `http://localhost:5001`).
+
+---
+
+## Option D — Run RAG Evaluation Metrics
+
+Run automated quantitative evaluation over query test suites:
 
 ```bash
 python evaluation/eval_runner.py
@@ -303,173 +337,125 @@ python evaluation/eval_runner.py
 
 ---
 
-# 🌐 REST API
+# 🌐 REST API Specifications
 
-## Analyze Query
+### 1. Analyze Query
+`POST /api/analyze`  
+Runs hybrid retrieval, sentiment analysis, ML impact prediction, LIME XAI, and LLM explanation.
 
-**POST**
-
-```http
-/api/analyze
-```
-
-### Example Request
-
-```bash
-curl -X POST http://localhost:5000/api/analyze \
--H "Content-Type: application/json" \
--d '{"query":"India Pakistan tension"}'
-```
-
-### Example Response
-
+* **Payload:**
 ```json
 {
-  "query": "India Pakistan tension",
+  "query": "India Pakistan diplomatic relations",
+  "provider": "local",
+  "groq_model": "llama-3.3-70b-versatile",
+  "groq_api_key": "optional_groq_key"
+}
+```
+
+* **Response:**
+```json
+{
+  "query": "India Pakistan diplomatic relations",
+  "provider": "local",
   "sentiment": {
-    "label": "negative",
-    "confidence": 0.697
+    "label": "NEGATIVE",
+    "confidence": 0.892
   },
   "outcome": {
     "impact": "HIGH",
-    "confidence": 0.80,
-    "matched": [
-      "tension",
-      "conflict",
-      "isolate"
-    ]
+    "confidence": 0.85,
+    "matched": ["tension", "border", "military"],
+    "explanation": "ML model predicts HIGH impact..."
   },
-  "explanation": "Based on recent news...",
+  "explanation": "Based on retrieved news sources...",
   "xai": {
-    "sentiment": {
-      "top_words": []
-    },
-    "outcome": {
-      "top_words": []
-    }
+    "sentiment": { "top_words": [["tension", -0.42], ["border", -0.31]] },
+    "outcome": { "top_words": [["military", 0.51], ["conflict", 0.44]] }
   },
-  "articles": []
+  "articles": [],
+  "_cached": false
 }
 ```
 
 ---
 
-## Available Endpoints
-
-| Method | Endpoint        | Description               |
-| ------ | --------------- | ------------------------- |
-| GET    | `/`             | Dashboard UI              |
-| POST   | `/api/analyze`  | Analyze query             |
-| POST   | `/api/ingest`   | Fetch latest news         |
-| POST   | `/api/explain`  | Generate LIME explanation |
-| POST   | `/api/evaluate` | Run evaluation metrics    |
-| GET    | `/api/status`   | Database statistics       |
+### 2. Live News Ingestion
+`POST /api/ingest`  
+Triggers live RSS fetch, SpaCy NER extraction, and ChromaDB vector updates.
 
 ---
 
-# 📊 Evaluation Metrics
-
-| Metric            | Description                    | Score        |
-| ----------------- | ------------------------------ | ------------ |
-| Context Precision | Relevant retrieved chunks      | 0.733        |
-| Context Recall    | Ground truth coverage          | 0.353        |
-| Answer Relevancy  | Query-answer alignment         | Requires LLM |
-| Faithfulness      | Grounding to retrieved context | Requires LLM |
-| Overall Score     | Aggregate performance          | 0.271        |
-
-> Answer relevancy and faithfulness require a functioning LLM connection.
+### 3. CrewAI Multi-Agent Workflow
+`POST /api/crew`  
+Runs the 3-agent autonomous intelligence process (Analyst → Predictor → Fact Checker).
 
 ---
 
-# 💡 Core Features
-
-## Hybrid Retrieval
-
-Combines:
-
-* BM25 keyword retrieval
-* Semantic vector search
-* CrossEncoder reranking
-
-This significantly improves retrieval quality compared to vector-only approaches.
+### 4. Knowledge Graph Endpoints
+* `GET /api/graph` — Retrieve co-occurrence nodes and edges.
+* `POST /api/graph/rebuild` — Force rebuild of entity graph from processed news.
 
 ---
 
-## Explainable AI (LIME)
-
-Every prediction is accompanied by word-level explanations showing exactly which terms influenced the model's decision.
-
-Benefits:
-
-* Transparency
-* Trustworthiness
-* Debugging support
+### 5. Other Utility Endpoints
+* `GET /api/status` — Get database count statistics.
+* `POST /api/explain` — Compute custom LIME explanation for arbitrary text.
+* `GET /api/llm/status` — Verify Ollama connectivity and list supported Groq models.
+* `GET /api/cache/status` & `POST /api/cache/clear` — Check or flush Redis query cache.
+* `POST /api/evaluate` — Execute RAG evaluation suite via API.
 
 ---
 
-## Fully Local LLM
+# 📊 Evaluation Benchmark Results
 
-Powered by:
+Evaluated on standard domain-specific test sets using custom RAG metrics:
 
-* Ollama
-* Mistral 7B
-
-Advantages:
-
-* No API costs
-* No rate limits
-* Offline operation
-* Privacy-friendly
+| Metric | Score | Description |
+| :--- | :---: | :--- |
+| **Context Precision** | **0.733** | Proportion of retrieved context chunks directly relevant to query |
+| **Context Recall** | **0.353** | Coverage of ground-truth signals by retrieved documents |
+| **Answer Relevancy** | **Evaluated** | Alignment between generated LLM response and input query |
+| **Faithfulness** | **Evaluated** | Factual grounding of generated answer within context |
+| **Overall Score** | **0.271+** | Aggregate performance benchmark |
 
 ---
 
-## Incremental Processing Pipeline
+# 💡 Core System Highlights
 
-The system is designed to be incremental.
-
-Features:
-
-* MD5-based article deduplication
-* Persistent vector storage
-* Re-runnable ingestion
-* No duplicate embeddings
+* **Hybrid Search Strategy:** Combines the strengths of lexical precision (BM25) and semantic intent (`all-MiniLM-L6-v2`), capped by CrossEncoder re-ranking (`ms-marco-MiniLM-L-6-v2`) to eliminate retrieval noise.
+* **Explainable AI (LIME):** Word-level token attribution gives clear visibility into why RoBERTa flagged sentiment or why the ML model scored high impact.
+* **Multi-Agent Orchestration:** CrewAI orchestrates autonomous agents that cross-check findings and fact-check predictions before generating the final report.
+* **Flexible LLM Backend:** Seamlessly toggle between fully private local execution (`llama3.2:3b` via Ollama) and ultra-fast cloud inference (Groq API).
 
 ---
 
-# ⚠️ Known Limitations
+# ⚠️ Known Limitations & Considerations
 
-* RSS feeds typically provide only the most recent 24–48 hours of news.
-* Mistral 7B requires approximately 4.5 GB RAM.
-* Impact prediction is currently rule-based.
-* LIME explanations are approximations (100 samples for faster execution).
+* RSS news feeds primarily capture real-time headlines (past 24–48 hours).
+* Ollama local LLM execution requires ~4 GB free RAM.
+* LIME explanations use sampling approximations for fast execution speed.
 
 ---
 
-# 🔮 Future Improvements
+# 🔮 Future Roadmap
 
-* [ ] Historical news support via NewsAPI
-* [ ] Machine learning-based impact prediction
-* [ ] Interactive knowledge graph visualization
-* [ ] CrewAI multi-agent architecture
-* [ ] User authentication and roles
-* [ ] Docker deployment
-* [ ] CI/CD pipeline integration
-* [ ] Real-time streaming ingestion
+* [ ] Integration with historical news APIs (e.g., NewsAPI / GDELT)
+* [ ] Advanced graph neural network (GNN) entity link prediction
+* [ ] Real-time WebSocket streaming news alerts
+* [ ] Multi-language news translation and sentiment analysis
+* [ ] User authentication & workspace state persistence
 
 ---
 
 # 👨‍💻 Author
 
-**Likesh Kumar Sahu**
-
-6th Semester Engineering Student
-
-GitHub: https://github.com/Likeshkumarsahu
+**Likesh Kumar Sahu**  
+*6th Semester Computer Science / AI-ML Engineering Student*  
+GitHub: [github.com/Likeshkumarsahu](https://github.com/Likeshkumarsahu)
 
 ---
 
 # 📄 License
 
-This project is licensed under the MIT License.
-
-Feel free to use, modify, and distribute it for academic or commercial purposes.
+This project is open-source software licensed under the **MIT License**.
