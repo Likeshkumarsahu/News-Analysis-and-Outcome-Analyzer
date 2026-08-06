@@ -1,5 +1,66 @@
+import os
+import requests
+
 from observability.tracing import trace_llm_call
 from guardrails.graph import get_guardrail_graph
+
+# ── Local Ollama ──────────────────────────────────────────────────────────
+# Must match the model litellm calls in llm/providers.py's FALLBACK_CHAIN
+# ("ollama/llama3.2:3b") — keep these in sync if you change the local model.
+OLLAMA_MODEL = "llama3.2:3b"
+
+
+def check_ollama_connected() -> dict:
+    """
+    Pings the local Ollama server and checks whether OLLAMA_MODEL is pulled.
+    Used by GET /api/llm/status to drive the frontend's Local/Groq toggle.
+
+    Returns:
+        {"connected": bool, "model_available": bool, "message": str}
+    """
+    host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+    try:
+        resp = requests.get(f"{host}/api/tags", timeout=3)
+        resp.raise_for_status()
+        models = [m.get("name", "") for m in resp.json().get("models", [])]
+
+        model_available = any(
+            m == OLLAMA_MODEL or m.startswith(OLLAMA_MODEL.split(":")[0] + ":")
+            for m in models
+        )
+        if model_available:
+            return {
+                "connected": True,
+                "model_available": True,
+                "message": f"Ollama is running and {OLLAMA_MODEL} is available.",
+            }
+        return {
+            "connected": True,
+            "model_available": False,
+            "message": f"Ollama is running, but '{OLLAMA_MODEL}' isn't pulled yet. "
+                       f"Run: ollama pull {OLLAMA_MODEL}",
+        }
+    except requests.exceptions.ConnectionError:
+        return {
+            "connected": False,
+            "model_available": False,
+            "message": f"Can't reach Ollama at {host}. Is `ollama serve` running?",
+        }
+    except Exception as e:
+        return {"connected": False, "model_available": False, "message": str(e)}
+
+
+# ── Groq free-tier models (litellm-prefixed model IDs) ──────────────────────
+# Source: https://console.groq.com/docs/models — production + notable preview
+# models available on Groq's free/developer API tier. Update this list if
+# Groq deprecates a model (check https://console.groq.com/docs/deprecations).
+GROQ_FREE_MODELS = [
+    "groq/llama-3.1-8b-instant",
+    "groq/llama-3.3-70b-versatile",
+    "groq/openai/gpt-oss-120b",
+    "groq/openai/gpt-oss-20b",
+    "groq/qwen/qwen3.6-27b",
+]
 
 
 def _build_prompt(query, retrieved_articles, sentiment, outcome) -> str:

@@ -1,7 +1,8 @@
 import os
-os.environ["TRANSFORMERS_OFFLINE"] = "0"
-os.environ["HF_DATASETS_OFFLINE"] = "0"
-os.environ["HF_HUB_OFFLINE"] = "0"
+
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
+os.environ["HF_DATASETS_OFFLINE"] = "1"
+os.environ["HF_HUB_OFFLINE"] = "1"
 
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
@@ -222,32 +223,38 @@ def cache_clear_route():
     count = clear_cache()
     return jsonify({"message": f"Cleared {count} cached entries."})
 
-# ── Run ───────────────────────────────────────────────────────────────────────
 
-if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=5000)
+# ── Multi-Agent Crew (Analyst → Predictor → Critic) ────────────────────────────
 
 @app.route("/api/crew", methods=["POST"])
 def crew_analyze():
     """
     POST /api/crew
-    Body: { "query": "your query" }
-    Runs full multi-agent CrewAI pipeline.
-    Warning: takes 3-5 minutes — 3 agents, multiple LLM calls.
+    Body: { "query": "...", "provider": "local|groq|anthropic|openai|gemini",
+            "llm_model": "...", "api_key": "..." }
+    provider/llm_model/api_key are optional — omit or send provider="local"
+    to use the server's default Ollama model.
+ 
+    Runs the full multi-agent (Analyst -> Predictor -> Critic) pipeline.
+    Warning: can take a few minutes — 3 agents, multiple LLM calls.
     """
     data = request.get_json()
     if not data or not data.get("query", "").strip():
         return jsonify({"error": "Query is required"}), 400
-
-    query = data["query"].strip()
-
+ 
+    query     = data["query"].strip()
+    provider  = data.get("provider")
+    llm_model = data.get("llm_model")
+    api_key   = data.get("api_key")
+ 
     try:
         from agents.news_crew import run_news_crew
-        result = run_news_crew(query)
+        result = run_news_crew(query, provider=provider, llm_model=llm_model, api_key=api_key)
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
+ 
+ 
 
 @app.route("/api/pii/scan", methods=["POST"])
 def pii_scan():
@@ -259,10 +266,23 @@ def pii_scan():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 @app.route("/api/hitl/resume", methods=["POST"])
 def hitl_resume():
     data = request.get_json()
     from models.llm_explainer import resume_hitl
     result = resume_hitl(data.get("thread_id", "default"), data.get("approved", False))
     return jsonify(result)
+
+@app.route("/api/llm/providers", methods=["GET"])
+def llm_providers():
+    """
+    Returns the selectable provider + model list for the frontend's
+    provider picker (Local / Groq / Claude / OpenAI / Gemini), each with
+    whether it needs an API key and which models are offered.
+    """
+    from llm.providers import PROVIDER_MODELS
+    return jsonify(PROVIDER_MODELS)
+
+# ── Run ───────────────────────────────────────────────────────────────────
+if __name__ == "__main__":
+    app.run(debug=False, host="0.0.0.0", port=5000)

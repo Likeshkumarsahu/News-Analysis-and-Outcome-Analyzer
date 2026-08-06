@@ -1,550 +1,189 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- ============================================================
-       NEWSANA AI — METADATA & RESOURCE PRELOADING
-       ============================================================ -->
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Newsana AI — AI-powered news analysis and outcome prediction platform. Real-time signal synthesis, knowledge graphs, CrewAI orchestration and explainable forecasts." />
-  <meta name="theme-color" content="#05060d" />
-
-  <!-- Open Graph Protocol Meta Tags for Social & Preview Cards -->
-  <meta property="og:title" content="Newsana AI" />
-  <meta property="og:description" content="AI-Powered News Analysis & Outcome Prediction Platform" />
-  <meta property="og:type" content="website" />
-
-  <title>Newsana AI — News Analysis & Outcome Prediction</title>
-  <link rel="icon" type="image/svg+xml" href="assets/icons/favicon.svg" />
-
-  <!-- External Font Preconnecting & Stylesheets (Inter & JetBrains Mono) -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
-
-  <!-- Font Awesome 6 Icon Library -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-
-  <!-- Core Application Stylesheet -->
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Newsana — News Analysis & Outcome Analyzer</title>
+  <link rel="stylesheet" href="/style.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  <script src="/script.js" defer></script>
 </head>
 <body>
-  <!-- Accessibility Skip Navigation Link -->
-  <a class="skip-link" href="#main">Skip to content</a>
 
-  <!-- ============================================================
-       DYNAMIC BACKGROUND ANIMATION LAYERS (AURORA, GRID, NOISE)
-       ============================================================ -->
-  <div id="bgLayers" aria-hidden="true">
-    <div class="bg-aurora"></div>
-    <div class="bg-blob bg-blob-a"></div>
-    <div class="bg-blob bg-blob-b"></div>
-    <div class="bg-grid"></div>
-    <div class="bg-noise"></div>
-  </div>
-
-  <!-- ============================================================
-       INITIAL APPLICATION LOADING SPLASH SCREEN
-       ============================================================ -->
-  <div id="appLoader" class="app-loader" role="status" aria-label="Loading Newsana AI">
-    <div class="loader-orbit"><span class="loader-ring"></span><span class="loader-ring r2"></span><span class="loader-ring r3"></span></div>
-    <img class="loader-mark" src="assets/icons/favicon.svg" alt="Newsana AI logo" />
-    <div class="loader-name">Newsana<span> AI</span></div>
-    <div class="loader-tag">Initializing intelligence engine…</div>
-    <div class="loader-progress"><span id="loaderBar"></span></div>
-  </div>
-
-  <!-- ============================================================
-       PRIMARY NAVIGATION SIDEBAR
-       ============================================================ -->
-  <aside class="sidebar" id="sidebar" aria-label="Primary navigation">
-    <div class="sidebar-head">
-      <a class="brand" href="#" aria-label="Newsana AI home">
-        <span class="brand-mark">
-          <svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="bm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b5cf6"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><rect x="3" y="3" width="58" height="58" rx="15" fill="#0b0c17" stroke="url(#bm)" stroke-width="2.5"/><path d="M22 18v28l12-16v16" stroke="url(#bm)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><circle cx="46" cy="46" r="5" fill="#22d3ee"/></svg>
-        </span>
-        <span class="brand-text">Newsana<em>AI</em></span>
-        <span class="brand-badge">PRO</span>
-      </a>
-      <button class="icon-btn sidebar-close" id="sidebarClose" aria-label="Close sidebar"><i class="fa-solid fa-xmark"></i></button>
+  <aside class="sidebar">
+    <div class="logo">
+      <span class="logo-icon">📰</span>
+      <span class="logo-text">Newsana</span>
     </div>
-
-    <nav class="sidebar-nav">
-      <p class="nav-label">Workspace</p>
-      <a href="#dashboard" class="nav-item active" data-nav="dashboard"><i class="fa-solid fa-gauge-high"></i><span>Dashboard</span><span class="nav-kbd">⌘1</span></a>
-      <a href="#analytics" class="nav-item" data-nav="analytics"><i class="fa-solid fa-chart-line"></i><span>Analytics</span><span class="nav-kbd">⌘2</span></a>
-      <a href="#graph" class="nav-item" data-nav="graph"><i class="fa-solid fa-diagram-project"></i><span>Knowledge Graph</span><span class="nav-badge">Live</span></a>
-      <a href="#crew" class="nav-item" data-nav="crew"><i class="fa-solid fa-robot"></i><span>CrewAI Agents</span><span class="nav-badge nav-badge-cyan">4</span></a>
-      <a href="#explain" class="nav-item" data-nav="explain"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Explainable AI</span></a>
-
-      <p class="nav-label">Intelligence</p>
-      <a href="#research" class="nav-item" data-nav="research"><i class="fa-solid fa-file-lines"></i><span>Research Report</span></a>
-      <a href="#news" class="nav-item" data-nav="news"><i class="fa-solid fa-newspaper"></i><span>Newsroom</span><span class="nav-badge">+8</span></a>
-      <a href="#" class="nav-item" data-open-modal="settingsModal"><i class="fa-solid fa-sliders"></i><span>Settings</span></a>
-    </nav>
-
-    <div class="sidebar-foot">
-      <div class="pro-card">
-        <div class="pro-card-top"><span class="pro-icon"><i class="fa-solid fa-bolt"></i></span><strong>Newsana Pro</strong></div>
-        <p>Unlock unlimited predictions & 120+ sources.</p>
-        <button class="btn btn-primary btn-sm btn-block" id="upgradeBtn">Upgrade now</button>
-      </div>
-      <button class="user-chip" id="sidebarUser" aria-haspopup="menu">
-        <img class="avatar" src="assets/images/avatar.svg" alt="User avatar" />
-        <span class="user-chip-text"><strong>Ava Chen</strong><small>Principal Analyst</small></span>
-        <i class="fa-solid fa-ellipsis"></i>
+    <nav class="nav">
+      <a class="nav-item active" onclick="showSection('analyze',this)">🔍 Analyze</a>
+      <a class="nav-item" onclick="showSection('graph',this)">🕸️ Knowledge Graph</a>
+      <a class="nav-item" onclick="showSection('about',this)">ℹ️ About</a>
+      <button id="crew-btn" class="btn-crew" onclick="runCrew()">
+        🤖 Deep Analysis (CrewAI)
       </button>
+
+      <!-- Provider buttons are injected here by script.js from /api/llm/providers -->
+      <div class="provider-toggle-wrap">
+        <div class="provider-toggle" id="provider-toggle">
+          <span class="provider-loading">Loading providers…</span>
+        </div>
+        <span id="provider-status" class="provider-status-text"></span>
+      </div>
+
+      <!-- Shown for whichever provider is selected, if it needs a key -->
+      <div id="cloud-config" class="groq-config hidden">
+        <select id="cloud-model-select" class="groq-select"></select>
+        <input type="password" id="cloud-api-key" class="groq-input" placeholder="Enter API key"/>
+        <button onclick="saveCloudConfig()" class="btn-secondary">Save</button>
+      </div>
+    </nav>
+    <div class="sidebar-bottom">
+      <div id="status-pill">Checking...</div>
+      <button class="btn-refresh" onclick="triggerIngest()">🔄 Refresh News</button>
     </div>
   </aside>
 
-  <!-- Mobile Sidebar Backdrop Overlay -->
-  <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
+  <main class="main">
 
-  <!-- ============================================================
-       MAIN CONTENT WRAPPER & TOP NAVIGATION HEADER
-       ============================================================ -->
-  <div class="main-wrap">
-    <header class="topnav" id="topnav">
-      <div class="topnav-left">
-        <button class="icon-btn topnav-toggle" id="sidebarToggle" aria-label="Toggle sidebar"><i class="fa-solid fa-bars"></i></button>
-        <div class="breadcrumb">
-          <span class="breadcrumb-root">Newsana</span>
-          <i class="fa-solid fa-chevron-right"></i>
-          <strong id="navTitle">Dashboard</strong>
-        </div>
-        <span class="status-pill" id="topnavStatus"><span class="status-dot"></span><span class="status-text">Connecting…</span></span>
+    <!-- ── Analyze ── -->
+    <section id="section-analyze" class="section active">
+      <div class="page-header">
+        <h1>News Analysis</h1>
+        <p>RAG · Sentiment · Impact · XAI · Multi-provider LLM</p>
       </div>
-
-      <div class="topnav-search">
-        <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="search" id="globalSearch" placeholder="Search topics, entities, tickers…" aria-label="Global search" autocomplete="off" />
-        <span class="kbd">/</span>
-      </div>
-
-      <div class="topnav-right">
-        <span class="status-pill status-pill-mobile" id="topnavStatusMobile"><span class="status-dot"></span></span>
-        <div class="dropdown-wrap">
-          <button class="icon-btn has-dot" id="notifBtn" aria-label="Notifications" aria-haspopup="true"><i class="fa-solid fa-bell"></i></button>
-          <div class="dropdown notif-panel" id="notifPanel" role="menu">
-            <div class="dropdown-head">
-              <strong>Notifications</strong>
-              <button class="link-btn" id="markAllRead">Mark all read</button>
-            </div>
-            <div class="notif-list" id="notifList"></div>
-            <div class="dropdown-foot"><a class="link-btn" href="#news">View all activity</a></div>
-          </div>
-        </div>
-        <button class="icon-btn" id="settingsBtn" aria-label="Open settings"><i class="fa-solid fa-gear"></i></button>
-        <div class="dropdown-wrap">
-          <button class="profile-btn" id="profileBtn" aria-label="Profile menu" aria-haspopup="true">
-            <img class="avatar" src="assets/images/avatar.svg" alt="Ava Chen" />
-            <span class="profile-info"><strong>Ava Chen</strong><small>ava@newsana.ai</small></span>
-            <i class="fa-solid fa-chevron-down"></i>
-          </button>
-          <div class="dropdown profile-menu" id="profileMenu" role="menu">
-            <div class="profile-hero">
-              <img class="avatar avatar-lg" src="assets/images/avatar.svg" alt="Ava Chen" />
-              <div><strong>Ava Chen</strong><small>Principal Analyst</small></div>
-              <span class="plan-badge"><i class="fa-solid fa-crown"></i> Pro</span>
-            </div>
-            <div class="menu-list">
-              <button class="menu-item"><i class="fa-regular fa-user"></i> Profile</button>
-              <button class="menu-item"><i class="fa-regular fa-credit-card"></i> Billing</button>
-              <button class="menu-item"><i class="fa-solid fa-key"></i> API Keys</button>
-              <button class="menu-item" data-open-modal="settingsModal"><i class="fa-solid fa-sliders"></i> Preferences</button>
-              <button class="menu-item menu-item-danger"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign out</button>
-            </div>
-          </div>
+      <div class="search-wrap">
+        <div class="search-inner">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="query-input"
+            placeholder="Enter a news topic... e.g. Gaza ceasefire, India Pakistan tension"
+            autocomplete="off"/>
+          <button id="analyze-btn" onclick="analyzeQuery()">Analyze</button>
         </div>
       </div>
-    </header>
-
-    <!-- ============================================================
-         PRIMARY APPLICATION CONTENT AREA
-         ============================================================ -->
-    <main class="content" id="main">
-
-      <!-- 1. HERO SECTION (SEARCH & QUICK ACTIONS) -->
-      <section class="hero reveal">
-        <p class="hero-greeting" id="greeting"><span class="greet-dot"></span> Good evening, Ava</p>
-        <h1 class="hero-title">Ask anything about the <span class="gradient-text">world</span>.</h1>
-        <p class="hero-sub">Newsana synthesizes millions of signals across 1,200+ sources to analyze events and predict outcomes with explainable confidence.</p>
-
-        <form class="hero-search" id="heroForm" autocomplete="off" role="search">
-          <i class="fa-solid fa-magnifying-glass hero-search-icon"></i>
-          <input type="text" id="heroInput" placeholder="Try “Global economy outlook” or “Predict Fed decision in September”…" aria-label="Analysis query" />
-          <span class="kbd" id="heroKbd">⌘K</span>
-          <button type="submit" class="btn btn-primary hero-submit" id="heroSubmit"><i class="fa-solid fa-arrow-up"></i><span>Analyze</span></button>
-          <div class="suggestions" id="suggestions" aria-live="polite"></div>
-        </form>
-
-        <div class="hero-quick">
-          <span class="quick-label"><i class="fa-solid fa-bolt"></i> Quick actions</span>
-          <button class="chip chip-quick" data-ingest><i class="fa-solid fa-link"></i> Ingest source</button>
-          <button class="chip chip-quick" data-chat-open><i class="fa-solid fa-comments"></i> Ask assistant</button>
-          <button class="chip chip-quick" data-run-crew><i class="fa-solid fa-robot"></i> Run CrewAI</button>
-        </div>
-
-        <div class="hero-row" id="trendingBlock">
-          <div class="hero-row-head">
-            <span class="quick-label"><i class="fa-solid fa-fire-flame-curved"></i> Trending topics</span>
-            <a class="link-btn" href="#news">Explore all <i class="fa-solid fa-arrow-right"></i></a>
-          </div>
-          <div class="chip-row" id="trendingRow"></div>
-        </div>
-
-        <div class="hero-row" id="recentBlock">
-          <div class="hero-row-head">
-            <span class="quick-label"><i class="fa-solid fa-clock-rotate-left"></i> Recent searches</span>
-            <button class="link-btn" id="clearRecent">Clear</button>
-          </div>
-          <div class="chip-row" id="recentRow"></div>
-        </div>
-      </section>
-
-      <!-- 2. EXECUTIVE BRIEF & OUTCOME PREDICTION GAUGE -->
-      <section class="section" id="dashboard">
-        <div class="section-head reveal">
-          <div>
-            <h2 class="section-title">Executive Brief</h2>
-            <p class="section-sub">Real-time synthesis of the latest signal flow</p>
-          </div>
-          <div class="section-actions">
-            <span class="live-badge" id="liveBadge"><span class="dot"></span> Live</span>
-            <button class="btn btn-ghost btn-sm" id="refreshBtn"><i class="fa-solid fa-rotate"></i> Refresh</button>
-          </div>
-        </div>
-
-        <!-- Key Metrics Cards Grid -->
-        <div class="grid stats-grid" id="statsGrid">
-          <div class="stat-card skeleton-card is-loading" data-stat="signals"><i class="fa-solid fa-wave-square stat-icon"></i><span class="stat-value" id="statSignals">—</span><span class="stat-label">Signals Analyzed</span><span class="stat-delta"></span></div>
-          <div class="stat-card skeleton-card is-loading" data-stat="confidence"><i class="fa-solid fa-gauge-high stat-icon"></i><span class="stat-value" id="statConfidence">—</span><span class="stat-label">Model Confidence</span><span class="stat-delta"></span></div>
-          <div class="stat-card skeleton-card is-loading" data-stat="sources"><i class="fa-solid fa-database stat-icon"></i><span class="stat-value" id="statSources">—</span><span class="stat-label">Sources Cross-referenced</span><span class="stat-delta"></span></div>
-          <div class="stat-card skeleton-card is-loading" data-stat="models"><i class="fa-solid fa-microchip stat-icon"></i><span class="stat-value" id="statModels">—</span><span class="stat-label">Active Models</span><span class="stat-delta"></span></div>
-          <div class="stat-card skeleton-card is-loading" data-stat="alerts"><i class="fa-solid fa-triangle-exclamation stat-icon"></i><span class="stat-value" id="statAlerts">—</span><span class="stat-label">Risk Alerts</span><span class="stat-delta"></span></div>
-        </div>
-
-        <!-- Executive Summary & SVG Prediction Gauge -->
-        <div class="grid exec-grid">
-          <article class="card exec-card is-loading" id="execCard" aria-live="polite">
-            <div class="card-head">
-              <span class="card-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
-              <div class="card-title-wrap">
-                <h3 class="card-title">AI Executive Summary</h3>
-                <p class="card-sub" id="execTopic">Synthesizing latest intelligence…</p>
-              </div>
-              <div class="card-tools">
-                <span class="model-chip"><i class="fa-solid fa-robot"></i> Predictor v3.2</span>
-                <button class="icon-btn btn-sm" id="copySummary" aria-label="Copy summary"><i class="fa-regular fa-copy"></i></button>
-              </div>
-            </div>
-            <div class="exec-body" id="execBody"></div>
-            <div class="exec-keypoints" id="execKeypoints"></div>
-            <div class="exec-meta" id="execMeta"></div>
-          </article>
-
-          <article class="card gauge-card is-loading" id="gaugeCard">
-            <div class="card-head">
-              <span class="card-icon"><i class="fa-solid fa-bullseye"></i></span>
-              <div class="card-title-wrap"><h3 class="card-title">Outcome Prediction</h3><p class="card-sub" id="gaugeSub">60-day outcome horizon</p></div>
-            </div>
-            <div class="gauge" id="gauge">
-              <svg class="gauge-svg" viewBox="0 0 200 122" role="img" aria-label="Outcome confidence gauge">
-                <defs>
-                  <linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0" stop-color="#f87171"/>
-                    <stop offset="0.45" stop-color="#fbbf24"/>
-                    <stop offset="1" stop-color="#34d399"/>
-                  </linearGradient>
-                  <filter id="needleGlow" x="-80%" y="-80%" width="260%" height="260%">
-                    <feGaussianBlur stdDeviation="2.2" result="b"/>
-                    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-                  </filter>
-                </defs>
-                <path id="gaugeTrack" d="M 24 112 A 76 76 0 0 1 176 112" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="14" stroke-linecap="round"/>
-                <path id="gaugeArc" d="M 24 112 A 76 76 0 0 1 176 112" fill="none" stroke="url(#gaugeGrad)" stroke-width="14" stroke-linecap="round" stroke-dasharray="238.76 238.76" stroke-dashoffset="238.76" opacity="0.92"/>
-                <g id="gaugeTicks" stroke="rgba(255,255,255,0.28)" stroke-width="1.6" stroke-linecap="round">
-                  <line x1="24" y1="112" x2="20" y2="112"/>
-                  <line x1="100" y1="40" x2="100" y2="36"/>
-                  <line x1="176" y1="112" x2="180" y2="112"/>
-                </g>
-                <g id="gaugeLabels" fill="#5b6377" font-family="JetBrains Mono, monospace" font-size="9" text-anchor="middle">
-                  <text x="20" y="118">0</text>
-                  <text x="100" y="30">50</text>
-                  <text x="180" y="118">100</text>
-                </g>
-                <g id="gaugeNeedleGroup" filter="url(#needleGlow)">
-                  <line id="gaugeNeedle" x1="100" y1="110" x2="100" y2="34" stroke="#eef1f7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M96 110 L104 110 L100 118 Z" fill="#eef1f7"/>
-                </g>
-                <circle cx="100" cy="110" r="7.5" fill="#0b0c17" stroke="#eef1f7" stroke-width="2.4"/>
-                <circle cx="100" cy="110" r="2.6" fill="#8b5cf6"/>
-              </svg>
-              <div class="gauge-value" id="gaugeValue">—</div>
-              <div class="gauge-label" id="gaugeLabel">Analyzing…</div>
-              <div class="gauge-tags" id="gaugeTags"></div>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <!-- 3. ANALYTICS & SENTIMENT CHARTS SECTION -->
-      <section class="section" id="analytics">
-        <div class="section-head reveal">
-          <div>
-            <h2 class="section-title">Analytics Dashboard</h2>
-            <p class="section-sub">Sentiment, sector and source intelligence</p>
-          </div>
-          <div class="range-pills" id="rangePills">
-            <button class="range-pill" data-range="7">7D</button>
-            <button class="range-pill" data-range="14">14D</button>
-            <button class="range-pill active" data-range="30">30D</button>
-            <button class="range-pill" data-range="90">90D</button>
-          </div>
-        </div>
-
-        <div class="grid charts-grid">
-          <article class="card chart-card is-loading" id="sentimentCard">
-            <div class="card-head"><div class="card-title-wrap"><h3 class="card-title">Sentiment Trend</h3><p class="card-sub">Rolling 7-day composite</p></div><span class="card-chip"><i class="fa-solid fa-arrow-trend-up"></i> +0.08</span></div>
-            <div class="chart-wrap chart-lg"><canvas id="chartSentiment"></canvas></div>
-          </article>
-
-          <article class="card chart-card is-loading" id="sectorCard">
-            <div class="card-head"><div class="card-title-wrap"><h3 class="card-title">Sector Distribution</h3><p class="card-sub">Signal share by sector</p></div></div>
-            <div class="chart-wrap chart-sm"><canvas id="chartSectors"></canvas></div>
-          </article>
-
-          <article class="card chart-card is-loading" id="radarCard">
-            <div class="card-head"><div class="card-title-wrap"><h3 class="card-title">Dimension Sentiment</h3><p class="card-sub">Multi-factor sentiment profile</p></div></div>
-            <div class="chart-wrap chart-sm"><canvas id="chartRadar"></canvas></div>
-          </article>
-
-          <article class="card chart-card is-loading" id="sourcesCard">
-            <div class="card-head"><div class="card-title-wrap"><h3 class="card-title">Coverage by Source</h3><p class="card-sub">Articles processed per outlet</p></div></div>
-            <div class="chart-wrap chart-sm"><canvas id="chartSources"></canvas></div>
-          </article>
-        </div>
-      </section>
-
-      <!-- 4. D3.JS KNOWLEDGE GRAPH VISUALIZATION -->
-      <section class="section" id="graph">
-        <div class="section-head reveal">
-          <div>
-            <h2 class="section-title">Knowledge Graph</h2>
-            <p class="section-sub">Entity relationships extracted from the news corpus</p>
-          </div>
-          <div class="section-actions">
-            <button class="icon-btn btn-sm" id="graphZoomIn" aria-label="Zoom in"><i class="fa-solid fa-plus"></i></button>
-            <button class="icon-btn btn-sm" id="graphZoomOut" aria-label="Zoom out"><i class="fa-solid fa-minus"></i></button>
-            <button class="icon-btn btn-sm" id="graphReset" aria-label="Reset view"><i class="fa-solid fa-rotate-left"></i></button>
-          </div>
-        </div>
-
-        <article class="card graph-card is-loading" id="graphCard">
-          <div class="graph-toolbar">
-            <div class="graph-legend" id="graphLegend"></div>
-            <div class="graph-stats"><span id="graphCount">0 nodes</span><span id="graphLinkCount">0 edges</span></div>
-          </div>
-          <div class="graph-canvas" id="graphContainer" aria-label="Interactive knowledge graph"></div>
-          <div class="graph-tooltip" id="graphTooltip" hidden></div>
-        </article>
-      </section>
-
-      <!-- 5. CREWAI AGENT ORCHESTRATION CONSOLE -->
-      <section class="section" id="crew">
-        <div class="section-head reveal">
-          <div>
-            <h2 class="section-title">CrewAI Dashboard</h2>
-            <p class="section-sub">Multi-agent research and prediction orchestration</p>
-          </div>
-          <button class="btn btn-primary btn-sm" id="runCrewBtn"><i class="fa-solid fa-play"></i> Run pipeline</button>
-        </div>
-
-        <div class="grid crew-grid">
-          <article class="card crew-pipeline is-loading" id="crewPipelineCard">
-            <div class="card-head"><div class="card-title-wrap"><h3 class="card-title">Pipeline</h3><p class="card-sub">Research → Analyze → Predict → Report</p></div></div>
-            <div class="pipeline" id="crewPipeline"></div>
-          </article>
-
-          <article class="card crew-console is-loading" id="crewConsoleCard">
-            <div class="console-head"><span class="console-dots"><i></i><i></i><i></i></span><span class="console-title"><i class="fa-solid fa-terminal"></i> crew:log</span><button class="icon-btn btn-sm" id="clearLog"><i class="fa-solid fa-eraser"></i></button></div>
-            <div class="console-body" id="crewLog" aria-live="polite"></div>
-          </article>
-
-          <article class="card crew-agents is-loading" id="crewAgentsCard">
-            <div class="card-head"><div class="card-title-wrap"><h3 class="card-title">Agents</h3><p class="card-sub">Crew roster & live workload</p></div></div>
-            <div class="agents-grid" id="crewAgents"></div>
-          </article>
-        </div>
-      </section>
-
-      <!-- 6. EXPLAINABLE AI (SHAP / LIME FEATURE IMPORTANCE) -->
-      <section class="section" id="explain">
-        <div class="section-head reveal">
-          <div>
-            <h2 class="section-title">Explainable AI</h2>
-            <p class="section-sub">Why the model reached its conclusion</p>
-          </div>
-          <span class="model-chip"><i class="fa-solid fa-shield-halved"></i> Interpretability enabled</span>
-        </div>
-
-        <div class="grid explain-grid">
-          <article class="card explain-card is-loading" id="explainCard">
-            <div class="card-head">
-              <span class="card-icon"><i class="fa-solid fa-scale-balanced"></i></span>
-              <div class="card-title-wrap"><h3 class="card-title">Feature Importance</h3><p class="card-sub" id="explainModel">Model: Predictor v3.2 · SHAP analysis</p></div>
-              <span class="acc-badge" id="explainAcc">94.2% acc</span>
-            </div>
-            <div class="feature-list" id="explainFeatures"></div>
-          </article>
-
-          <article class="card explain-card is-loading" id="signalsCard">
-            <div class="card-head">
-              <span class="card-icon"><i class="fa-solid fa-satellite-dish"></i></span>
-              <div class="card-title-wrap"><h3 class="card-title">Top Contributing Signals</h3><p class="card-sub">Highest-impact news drivers</p></div>
-            </div>
-            <div class="signal-list" id="explainSignals"></div>
-          </article>
-        </div>
-      </section>
-
-      <!-- 7. GENERATED RESEARCH DOSSIER REPORT -->
-      <section class="section" id="research">
-        <div class="section-head reveal">
-          <div>
-            <h2 class="section-title">Research Report</h2>
-            <p class="section-sub" id="reportTopic">Generated intelligence dossier</p>
-          </div>
-          <div class="section-actions">
-            <button class="btn btn-ghost btn-sm" id="downloadReport"><i class="fa-solid fa-download"></i> Export PDF</button>
-            <button class="btn btn-primary btn-sm" id="regenerateReport"><i class="fa-solid fa-wand-magic-sparkles"></i> Regenerate</button>
-          </div>
-        </div>
-
-        <article class="card report-card is-loading" id="reportCard">
-          <div class="report-tabs" id="reportTabs" role="tablist">
-            <button class="report-tab active" data-tab="exec" role="tab"><i class="fa-solid fa-scroll"></i> Executive</button>
-            <button class="report-tab" data-tab="analysis" role="tab"><i class="fa-solid fa-magnifying-glass-chart"></i> Analysis</button>
-            <button class="report-tab" data-tab="forecast" role="tab"><i class="fa-solid fa-chart-line"></i> Forecasts</button>
-            <button class="report-tab" data-tab="risks" role="tab"><i class="fa-solid fa-triangle-exclamation"></i> Risks</button>
-            <button class="report-tab" data-tab="sources" role="tab"><i class="fa-solid fa-book-open"></i> Sources</button>
-          </div>
-          <div class="report-body" id="reportContent"></div>
-        </article>
-      </section>
-
-      <!-- 8. NEWSROOM HEADLINES FEED -->
-      <section class="section" id="news">
-        <div class="section-head reveal">
-          <div>
-            <h2 class="section-title">Newsroom</h2>
-            <p class="section-sub">Curated, scored and sentiment-tagged headlines</p>
-          </div>
-          <div class="section-actions">
-            <div class="filter-pills" id="newsFilters">
-              <button class="filter-pill active" data-filter="all">All</button>
-              <button class="filter-pill" data-filter="markets">Markets</button>
-              <button class="filter-pill" data-filter="macro">Macro</button>
-              <button class="filter-pill" data-filter="tech">Tech</button>
-              <button class="filter-pill" data-filter="geopolitics">Geo</button>
-            </div>
-          </div>
-        </div>
-        <div class="news-grid" id="newsGrid"></div>
-      </section>
-    </main>
-
-    <!-- ============================================================
-         FOOTER SECTION
-         ============================================================ -->
-    <footer class="footer">
-      <div class="footer-brand">
-        <img src="assets/icons/favicon.svg" alt="Newsana AI" class="footer-mark" />
-        <div><strong>Newsana AI</strong><p>AI-powered news analysis & outcome prediction.</p></div>
+      <div id="loader" class="loader hidden">
+        <div class="loader-dots"><span></span><span></span><span></span></div>
+        <p>Analyzing with RAG pipeline...</p>
       </div>
-      <div class="footer-links">
-        <a href="#">Documentation</a>
-        <a href="#">API Reference</a>
-        <a href="#">Status</a>
-        <a href="#">Privacy</a>
-        <a href="#">Terms</a>
-        <a href="https://github.com/anomalyco/opencode/issues" target="_blank" rel="noopener">Support</a>
+      <div id="error-box" class="error-box hidden"></div>
+      <div id="results" class="hidden">
+        <div class="cards-row">
+          <div class="card card-sentiment" id="card-sentiment">
+            <div class="card-icon">💬</div>
+            <div class="card-label">Sentiment</div>
+            <div class="card-value" id="sentiment-label">—</div>
+            <div class="card-bar"><div class="card-bar-fill" id="sentiment-bar"></div></div>
+            <div class="card-sub" id="sentiment-conf">—</div>
+          </div>
+          <div class="card card-impact" id="card-impact">
+            <div class="card-icon">⚡</div>
+            <div class="card-label">Impact Level</div>
+            <div class="card-value" id="impact-label">—</div>
+            <div class="card-bar"><div class="card-bar-fill" id="impact-bar"></div></div>
+            <div class="card-sub" id="impact-conf">—</div>
+          </div>
+          <div class="card card-articles">
+            <div class="card-icon">📄</div>
+            <div class="card-label">Sources Found</div>
+            <div class="card-value" id="sources-count">—</div>
+            <div class="card-sub" id="sources-names">—</div>
+          </div>
+        </div>
+        <div class="block" id="signals-block">
+          <div class="block-header"><span class="block-icon">⚡</span><span>Impact Signals</span></div>
+          <div id="signals-list" class="tags-row"></div>
+        </div>
+        <div class="block">
+          <div class="block-header">
+            <span class="block-icon">🤖</span>
+            <span>AI Explanation <span class="badge" id="explanation-badge">—</span></span>
+          </div>
+          <p id="explanation-text" class="explanation-text"></p>
+        </div>
+        <div class="block">
+          <div class="block-header">
+            <span class="block-icon">🔬</span>
+            <span>Explainability <span class="badge">LIME</span></span>
+          </div>
+          <div id="xai-block"></div>
+        </div>
+        <div class="block">
+          <div class="block-header"><span class="block-icon">📰</span><span>Retrieved Articles</span></div>
+          <div id="articles-list"></div>
+        </div>
       </div>
-      <div class="footer-status"><span class="status-dot"></span> All systems operational · <span id="footerVersion">v3.2.1</span></div>
-      <p class="footer-copy">© <span id="footerYear"></span> Newsana AI. Crafted with <i class="fa-solid fa-heart"></i> and large language models.</p>
-    </footer>
-  </div>
 
-  <!-- ============================================================
-       FLOATING ACTION BUTTON & AI ASSISTANT CHAT DRAWER
-       ============================================================ -->
-  <button class="fab" id="fab" aria-label="Open AI assistant"><i class="fa-solid fa-comment-dots fab-icon"></i><span class="fab-ring"></span></button>
-
-  <aside class="chat-panel" id="chatPanel" aria-label="AI chat assistant" aria-hidden="true">
-    <div class="chat-head">
-      <div class="chat-bot">
-        <span class="bot-avatar"><i class="fa-solid fa-robot"></i></span>
-        <div><strong>Newsana Assistant</strong><small><span class="status-dot"></span> Online · GPT-powered</small></div>
+      <!-- CrewAI deep-analysis output — hidden until "Deep Analysis" is run -->
+      <div id="crew-results" class="block hidden">
+        <div class="block-header">
+          <span class="block-icon">🤖</span>
+          <span>CrewAI Deep Analysis <span class="badge">Analyst → Predictor → Critic</span>
+          <span class="badge" id="crew-model-badge">—</span></span>
+        </div>
+        <div id="crew-loading" class="crew-loading-text hidden">
+          ⏳ Running the multi-agent pipeline — this can take a few minutes...
+        </div>
+        <div id="crew-content"></div>
       </div>
-      <button class="icon-btn btn-sm" id="chatClose" aria-label="Close assistant"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <div class="chat-messages" id="chatMessages" aria-live="polite"></div>
-    <div class="chat-suggest" id="chatSuggestions"></div>
-    <form class="chat-form" id="chatForm">
-      <input type="text" id="chatInput" placeholder="Ask about any topic or outcome…" aria-label="Chat message" autocomplete="off" />
-      <button type="submit" class="chat-send" aria-label="Send message"><i class="fa-solid fa-arrow-up"></i></button>
-    </form>
-  </aside>
+    </section>
 
-  <!-- ============================================================
-       SETTINGS MODAL DIALOG
-       ============================================================ -->
-  <div class="modal" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" hidden>
-    <div class="modal-backdrop" data-close-modal></div>
-    <div class="modal-panel settings-modal">
-      <div class="modal-head">
-        <div><h3 id="settingsTitle">Settings</h3><p>Configure your Newsana workspace</p></div>
-        <button class="icon-btn" data-close-modal aria-label="Close settings"><i class="fa-solid fa-xmark"></i></button>
+    <!-- ── Knowledge Graph ── -->
+    <section id="section-graph" class="section hidden">
+      <div class="page-header">
+        <h1>Knowledge Graph</h1>
+        <p>Entity relationships extracted from news articles via SpaCy NER</p>
       </div>
-      <div class="settings-layout">
-        <nav class="settings-nav" id="settingsNav">
-          <button class="settings-tab active" data-settings-tab="general"><i class="fa-solid fa-user-gear"></i> General</button>
-          <button class="settings-tab" data-settings-tab="appearance"><i class="fa-solid fa-palette"></i> Appearance</button>
-          <button class="settings-tab" data-settings-tab="api"><i class="fa-solid fa-plug"></i> API & Backend</button>
-          <button class="settings-tab" data-settings-tab="notifications"><i class="fa-solid fa-bell"></i> Notifications</button>
-          <button class="settings-tab" data-settings-tab="data"><i class="fa-solid fa-database"></i> Data & Ingest</button>
-        </nav>
-        <div class="settings-content" id="settingsContent"></div>
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+        <button onclick="loadGraph()" id="graph-load-btn"
+          style="padding:10px 20px;background:var(--accent);color:#0a0c10;border:none;border-radius:8px;font-weight:700;cursor:pointer">
+          Load Graph
+        </button>
+        <button onclick="rebuildGraph()" id="graph-rebuild-btn"
+          style="padding:10px 20px;background:var(--bg3);color:var(--text2);border:1px solid var(--border2);border-radius:8px;cursor:pointer">
+          🔄 Rebuild from DB
+        </button>
+        <span id="graph-status" style="font-size:12px;color:var(--text2)"></span>
       </div>
-      <div class="modal-foot">
-        <button class="btn btn-ghost" data-close-modal>Cancel</button>
-        <button class="btn btn-primary" id="saveSettings"><i class="fa-solid fa-check"></i> Save changes</button>
+      <div id="graph-stats-row" style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap"></div>
+      <div id="graph-controls" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"></div>
+      <div id="graph-container" style="
+        width:100%;height:560px;
+        border:1px solid var(--border);border-radius:12px;
+        overflow:hidden;background:var(--bg2);position:relative">
+        <div id="graph-placeholder" style="
+          display:flex;flex-direction:column;align-items:center;
+          justify-content:center;height:100%;gap:12px;
+          color:var(--text2);font-size:14px">
+          <span style="font-size:2rem">🕸️</span>
+          <span>Click "Load Graph" to visualize entity relationships</span>
+        </div>
+        <svg id="kg-svg" style="width:100%;height:100%;display:none;position:absolute;top:0;left:0"></svg>
+        <div id="kg-tooltip" style="
+          position:absolute;background:var(--bg2);
+          border:1px solid var(--border2);border-radius:8px;
+          padding:10px 14px;font-size:12px;pointer-events:none;
+          opacity:0;transition:opacity .15s;max-width:200px;z-index:10"></div>
       </div>
-    </div>
-  </div>
+      <div id="graph-legend" style="display:flex;gap:14px;flex-wrap:wrap;padding:8px 0 2px;align-items:center"></div>
+    </section>
 
-  <!-- Global Toast Notification Container -->
-  <div class="toast-wrap" id="toastWrap" aria-live="assertive"></div>
+    <!-- ── About ── -->
+    <section id="section-about" class="section hidden">
+      <div class="page-header">
+        <h1>About Newsana</h1>
+        <p>End-to-end RAG pipeline for news analysis</p>
+      </div>
+      <div class="about-grid">
+        <div class="about-card"><div class="about-icon">🔍</div><h3>Hybrid Retrieval</h3><p>BM25 + semantic vector search with CrossEncoder reranking.</p></div>
+        <div class="about-card"><div class="about-icon">💬</div><h3>RoBERTa Sentiment</h3><p>Twitter-trained RoBERTa for accurate sentiment classification.</p></div>
+        <div class="about-card"><div class="about-icon">⚡</div><h3>ML Impact Prediction</h3><p>TF-IDF + Logistic Regression classifying HIGH / MEDIUM / LOW.</p></div>
+        <div class="about-card"><div class="about-icon">🔬</div><h3>LIME XAI</h3><p>Word-level explainability for every prediction.</p></div>
+        <div class="about-card"><div class="about-icon">🤖</div><h3>Multi-provider LLM</h3><p>Local Ollama, or bring your own Groq / Claude / OpenAI / Gemini key.</p></div>
+        <div class="about-card"><div class="about-icon">🕸️</div><h3>Knowledge Graph</h3><p>D3.js entity relationship graph from SpaCy NER extraction.</p></div>
+      </div>
+    </section>
 
-  <!-- ============================================================
-       VENDOR LIBRARIES & APPLICATION SCRIPT INCLUSION
-       ============================================================ -->
-  <!-- Chart.js 4.4.3 for Canvas-based Data Charts -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <!-- D3.js 7.9.0 for Force-Directed Knowledge Graph -->
-  <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
-  <!-- GSAP 3.12.5 for Smooth Entrance UI Animations -->
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  </main>
 
-  <!-- Newsana Application Scripts (Order Dependency: Config → Utils → Mock → API → Modules → App) -->
-  <script src="assets/js/config.js"></script>
-  <script src="assets/js/utils.js"></script>
-  <script src="assets/js/mock.js"></script>
-  <script src="assets/js/api.js"></script>
-  <script src="assets/js/charts.js"></script>
-  <script src="assets/js/graph.js"></script>
-  <script src="assets/js/ui.js"></script>
-  <script src="assets/js/chat.js"></script>
-  <script src="script.js"></script>
 </body>
 </html>
